@@ -1,0 +1,2 @@
+# College TravelMap
+A real time social map and travel hub for college, showing where everyone is and what's happening. Students can create travel plans, find groups, and coordinate meetups through the live map.
