@@ -1,0 +1,48 @@
+{% load static %}
+<!-- 
+Django-Blocks:
+    explicit_CSS
+    content
+    explicit_scripts
+-->
+
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>TravelMap</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bss-overrides.css' %}">
+    <link rel="stylesheet" href="{% static 'css/Login-Form-Basic-icons.css' %}">
+
+    <!-- explicit_CSS -->
+    <!-------------------------------------------------------------------------------->
+    {% block explicit_CSS %}{% endblock %}        
+
+</head>
+
+<body>
+    <!-------------------------------------------------------------------------------->
+
+    {% include 'partials/navbar.html' %}
+
+    <!-------------------------------------------------------------------------------->
+
+    <section>
+        {% block content %}{% endblock %}        
+    </section>
+
+    <!-------------------------------------------------------------------------------->
+    
+    {% include 'partials/footer.html' %}
+
+    <!-------------------------------------------------------------------------------->
+    
+    <script src="{% static 'bootstrap/js/bootstrap.min.js'%}"></script>
+
+    <!-- explicit_scripts -->
+    {% block explicit_scripts %}{% endblock %}   
+</body>
+</html>

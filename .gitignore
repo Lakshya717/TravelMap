@@ -1,4 +1,6 @@
 __pycache__
+venv
 db.sqlite3
 
+Data Dump
 personal_readme.md
