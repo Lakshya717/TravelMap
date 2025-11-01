@@ -3,8 +3,8 @@
 
 {% block content %}
 <section>
-    <!-- carousel -->
-    <div class="carousel slide" data-bs-ride="carousel" id="carousel-1" style="height: 600px;">
+    <!-- carousel -->    
+    <div id="home" class="carousel slide" data-bs-ride="carousel" id="carousel-1" style="height: 600px;">
         <div class="carousel-inner h-100">
             {% for obj in index_carousel %}
             <div class="carousel-item {% if forloop.first %}active{% endif %} h-100">
@@ -182,7 +182,7 @@
     </div>
 
     <!-- Why  -->
-     <div class="container" style="margin-top: 150px;">
+     <div id="about" class="container" style="margin-top: 150px;">
         <div class="row">
             <div class="col col-md-8 mx-auto">
                 <h1 class="text-center mb-4 mx-auto text-uppercase" style="color: var(--bs-primary);">Why</h1>
@@ -193,7 +193,7 @@
 
 
     <!-- Contact -->
-     <section class="position-relative py-xl-5" style="margin-top: 150px;">
+     <section id="contact" class="position-relative py-xl-5" style="margin-top: 150px;">
         <div class="container position-relative">
             <div class="row mb-5">
                 <div class="col-md-8 col-xl-6 text-center mx-auto">

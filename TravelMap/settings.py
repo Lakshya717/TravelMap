@@ -37,9 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    
+    # custom apps
     'Accounts',
     'UI',
+
+    # custom extensions
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -141,3 +146,20 @@ LOGIN_URL = 'UI:login'
 # Logout config
 # -------------------------------------------------------------------------------------
 LOGOUT_REDIRECT_URL = "UI:login"
+
+
+# crispy forms
+# -------------------------------------------------------------------------------------
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# cross-page messages
+# -------------------------------------------------------------------------------------
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.DEBUG: 'debug',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',  # Bootstrap uses 'danger' instead of 'error'
+}

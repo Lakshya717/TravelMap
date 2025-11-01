@@ -17,13 +17,19 @@ Django-Blocks:
     <link rel="stylesheet" href="{% static 'css/bss-overrides.css' %}">
     <link rel="stylesheet" href="{% static 'css/Login-Form-Basic-icons.css' %}">
 
+    <style>
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+    </style>
     <!-- explicit_CSS -->
     <!-------------------------------------------------------------------------------->
     {% block explicit_CSS %}{% endblock %}        
 
 </head>
 
-<body>
+<body data-bs-spy="scroll" data-bs-target="#navbar" data-bs-offset="80" tabindex="0">
     <!-------------------------------------------------------------------------------->
 
     {% include 'partials/navbar.html' %}
@@ -41,6 +47,8 @@ Django-Blocks:
     <!-------------------------------------------------------------------------------->
     
     <script src="{% static 'bootstrap/js/bootstrap.min.js'%}"></script>
+    
+    {% include 'partials/toast_container.html' %}
 
     <!-- explicit_scripts -->
     {% block explicit_scripts %}{% endblock %}   
