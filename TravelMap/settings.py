@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     # custom extensions
     'crispy_forms',
     'crispy_bootstrap5',
+    'dynamic_breadcrumbs',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +73,7 @@ TEMPLATES = [
             
                 # custom context-processors
                 'UI.context_processors.site_settings',
+                'dynamic_breadcrumbs.context_processors.breadcrumbs',
             ],
         },
     },

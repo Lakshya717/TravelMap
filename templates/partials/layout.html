@@ -12,7 +12,7 @@ Django-Blocks:
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>TravelMap</title>
+    <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/bss-overrides.css' %}">
     <link rel="stylesheet" href="{% static 'css/Login-Form-Basic-icons.css' %}">
@@ -30,6 +30,7 @@ Django-Blocks:
 </head>
 
 <body data-bs-spy="scroll" data-bs-target="#navbar" data-bs-offset="80" tabindex="0">
+
     <!-------------------------------------------------------------------------------->
 
     {% include 'partials/navbar.html' %}
@@ -37,6 +38,12 @@ Django-Blocks:
     <!-------------------------------------------------------------------------------->
 
     <section>
+        {% if breadcrumbs %}
+        <div class="breadcrumb-wrapper">
+            {% include "dynamic_breadcrumbs/breadcrumbs.html" with breadcrumbs=breadcrumbs %}
+        </div>
+        {% endif %}
+        
         {% block content %}{% endblock %}        
     </section>
 
