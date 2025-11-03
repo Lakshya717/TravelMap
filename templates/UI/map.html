@@ -1,0 +1,24 @@
+{% extends 'partials/layout.html' %}
+{% load static %}
+
+{% block title %}
+    Map - TravelMap
+{% endblock %}
+
+{% block explicit_CSS %}
+<style>
+    nav,footer {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="map"></div>
+{% endblock %}
+
+{% block explicit_scripts %}
+<script>
+
+</script>
+{% endblock %}

@@ -38,14 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # custom apps
-    'Accounts',
-    'UI',
-
     # custom extensions
     'crispy_forms',
     'crispy_bootstrap5',
     'dynamic_breadcrumbs',
+
+    # custom apps
+    'Accounts',
+    'UI',
 ]
 
 MIDDLEWARE = [

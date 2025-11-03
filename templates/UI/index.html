@@ -1,6 +1,10 @@
 {% extends 'partials/layout.html' %}
 {% load static %}
 
+{% block title %}
+    TravelMap
+{% endblock %}
+
 {% block content %}
 <section>
     <!-- carousel -->    
@@ -50,7 +54,7 @@
                         <p class="mb-4">
                             Coordinating travel back home or for a long weekend is a mess. Who&#39;s driving? When is everyone leaving? Is anyone else flying into the same airport? Trying to find a reliable ride-share in a sea of disconnected messages is stressful, and traveling alone is a drag. <strong>You deserve a better way.</strong>
                         </p>
-                        <a class="btn btn-primary fs-5 me-2 px-4 py-2" href="#">Get Started</a>
+                        <a class="btn btn-primary fs-5 me-2 px-4 py-2" href="{% url 'UI:map' %}">Get Started</a>
                     </div>
                 </div>
             </div>

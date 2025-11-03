@@ -1,0 +1,135 @@
+{% extends 'partials/layout.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+Travelplans
+{% endblock %}
+
+{% block explicit_CSS %}
+
+
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="container min-vh-100 mt-4">
+        <!-- Top actions -->
+        <div class="row mb-3">
+            <div class="col d-flex justify-content-between align-items-center">
+                {% if personal == True %}
+                    <h3 class="mb-0">Your travel plans</h3>
+                    <a href="{% url 'UI:new_travelplan' %}" class="btn btn-primary">Create New</a>
+                {% else %}
+                    <h3 class="mb-0">Public travel plans</h3>
+                    <a href="{% url 'UI:my_travelplans' %}" class="btn btn-primary">Your Plans</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if plans %}
+            {% for plan in plans %}
+                <div class="row mb-3">
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title">{{ plan.title }}</h4>
+                                <h6 class="text-muted card-subtitle mb-2">
+                                    {% for p in plan.all_passengers %}
+                                        {% if forloop.last %}
+                                            {{ p.username }}
+                                        {% else %}
+                                            {{ p.username }} ,
+                                        {% endif %}
+                                    {% endfor %}
+                                </h6>
+                                <p>
+                                    {% with ft=plan.first_trip lt=plan.last_trip %}
+                                        {% if ft %}
+                                            <strong>Date:</strong> {{ ft.departure_time|date:"d/m/y" }}<br>
+                                            <strong>Origin:</strong> {{ ft.origin_name }}<br>
+                                        {% endif %}
+                                        {% if lt %}
+                                            <strong>Destination:</strong> {{ lt.destination_name }}
+                                        {% endif %}
+                                    {% endwith %}
+                                </p>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>trip #</th>
+                                                <th>From</th>
+                                                <th>Date-time</th>
+                                                <th>To</th>
+                                                <th>Date-time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for trip in plan.trips.all %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>{% if forloop.first %}<strong>{{ trip.origin_name }}</strong>{% else %}{{ trip.origin_name }}{% endif %}</td>
+                                                    <td>{{ trip.departure_time|date:"d/m/y - g:i A" }}</td>
+                                                    <td>{% if forloop.last %}<strong>{{ trip.destination_name }}</strong>{% else %}{{ trip.destination_name }}{% endif %}</td>
+                                                    <td>
+                                                        {% if trip.estimated_arrival_time %}
+                                                            {{ trip.estimated_arrival_time|date:"d/m/y - g:i A" }}
+                                                        {% else %}
+                                                            —
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr><td colspan="5" class="text-muted">No trips added yet.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-primary me-3" type="button">Check on Map</button>
+                                <button class="btn btn-primary me-3" type="button">Invite</button>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-primary" type="button">Edit</button>
+                                    <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="#">Archive</a>
+                                        <a class="dropdown-item" href="#">Delete</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info mt-4">You have no travel plans yet. <a href="{% url 'UI:new_travelplan' %}">Create one</a>.</div>
+        {% endif %}
+
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <div class="row">
+            <div class="col">
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                            <a class="page-link" aria-label="Previous" href="?page={{ page_obj.previous_page_number }}" tabindex="-1"><span aria-hidden="true">«</span></a>
+                        </li>
+                        {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endfor %}
+                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                            <a class="page-link" aria-label="Next" href="?page={{ page_obj.next_page_number }}"><span aria-hidden="true">»</span></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block explicit_scripts %}
+
+
+{% endblock %}

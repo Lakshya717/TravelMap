@@ -1,0 +1,80 @@
+<!-- 
+Variables:
+    form            : forms class instance to render
+    hasFile         : Boolean
+    submit_type     : submit-tag (if there are more than one forms in a single template)
+    removeSubmit    : Boolean (optional) (remove the submit button all together) (Default=False)  
+
+Explicit 'field' attributes:
+    .col_class  : For bootstrap styling
+-->
+
+{% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if not removeSubmit %}
+    {% if hasFile %}
+        <form method="post" enctype="multipart/form-data">
+    {% else %}
+        <form method="post">
+    {% endif %}
+{% endif %}
+
+{% csrf_token %}
+
+<!-- Step indicator -->
+{% if wizard.steps %}
+    <div class="mb-3">
+        Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}
+    </div>
+{% endif %}
+
+
+<div class="row">
+    {% for field in form %}
+        {% if not field.is_hidden %}
+            <div class="{{ field.col_class }} mb-3">
+                {% if field.field.required %}
+                    {{ field.label_tag }} <span class="text-danger">*</span>
+                {% else %}
+                    {{ field.label_tag }}
+                {% endif %}
+
+                {{ field }}
+                
+                {% if field.help_text %} 
+                    <small class="form-text text-muted">{{ field.help_text }}</small> 
+                {% endif %}
+
+                {% if field.errors %}
+                    
+                    {% for error in field.errors %}
+                        <div class="text-danger" id="{{ field.name }}-error">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% else %}
+            {{ field }}
+        {% endif %}
+    {% endfor %}
+    
+    {% if not removeSubmit %}
+        <div class="row">
+            {% if submit_type %}
+                <button class="btn btn-primary col-12 col-md-6 mx-auto" type="submit" name="submit_type" value="{{ submit_type }}">Submit</button>
+            {% else %}
+                <button id="submit" class="btn btn-primary col-12 col-md-6 mx-auto" type="submit">Submit</button>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+{% if not removeSubmit %}
+    </form>
+{% endif %}

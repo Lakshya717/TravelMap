@@ -1,0 +1,137 @@
+{% extends 'partials/layout.html' %}
+{% load static %}
+
+{% block title %}
+    New Travelpan - TravelMap
+{% endblock %}
+
+{% block explicit_CSS %}
+
+
+
+{% endblock %} 
+
+{% block content %}
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Travel Plan base form -->
+            <div class="col-md-6 mb-3">
+                <div class="card p-3">
+                    {% include 'partials/django_form.html' with form=plan_form removeSubmit=True %}
+                </div>
+            </div>
+
+            <!-- Trip formset management form (render ONCE) -->
+            {{ formset.management_form }}
+
+            <!-- Existing Trip forms -->
+            <div id="trip-formset" data-prefix="{{ formset.prefix }}">
+                {% for form in formset %}
+                    <div class="col-md-6 mb-3 formset-item">
+                        <div class="card p-3">
+                            {% include 'partials/django_form.html' with form=form removeSubmit=True %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Hidden empty form template used by JS to add new forms dynamically -->
+            <template id="empty-form-template">
+                <div class="col-md-6 mb-3 formset-item">
+                    <div class="card p-3">
+                        {% include 'partials/django_form.html' with form=formset.empty_form removeSubmit=True %}
+                    </div>
+                </div>
+            </template>
+
+            <button type="button" id="add-form" class="btn btn-outline-primary col-12 col-md-6 mx-auto mb-3">Add another trip</button>
+
+            <button id="submit" class="btn btn-primary col-12 col-md-6 mx-auto" type="submit">Submit</button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block explicit_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addBtn = document.getElementById('add-form');
+        const container = document.getElementById('trip-formset');
+        if (!addBtn || !container) return;
+
+        const prefix = container.dataset.prefix || 'form';
+        const totalFormsInput = document.querySelector(`input[name='${prefix}-TOTAL_FORMS']`);
+        const template = document.getElementById('empty-form-template');
+
+        if (!totalFormsInput || !template) return;
+
+        // Attach hide-on-delete behavior for existing and future DELETE checkboxes
+        function attachDeleteHandlers(scopeEl) {
+            const checkboxes = (scopeEl || container).querySelectorAll("input[type='checkbox'][name$='-DELETE']");
+            checkboxes.forEach(cb => {
+                // Avoid duplicate listeners
+                if (cb.dataset.deleteHandlerAttached === '1') return;
+                cb.dataset.deleteHandlerAttached = '1';
+
+                const hideOrShow = () => {
+                    const item = cb.closest('.formset-item') || cb.closest('.card');
+                    if (!item) return;
+                    if (cb.checked) {
+                        item.classList.add('d-none');
+                    } else {
+                        item.classList.remove('d-none');
+                    }
+                };
+
+                cb.addEventListener('change', hideOrShow);
+
+                // Apply initial state (if already checked)
+                hideOrShow();
+            });
+        }
+
+        function getCurrentIndex() {
+            const val = parseInt(totalFormsInput.value, 10);
+            return isNaN(val) ? 0 : val;
+        }
+
+        function incrementTotalForms() {
+            const current = getCurrentIndex();
+            totalFormsInput.value = String(current + 1);
+        }
+
+        addBtn.addEventListener('click', function () {
+            const index = getCurrentIndex();
+            const html = template.innerHTML.replace(/__prefix__/g, index);
+
+            // Create a wrapper to parse HTML, then extract first root element
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html.trim();
+            const newItem = wrapper.firstElementChild;
+
+            // Optional: clear any pre-filled values (should be empty already)
+            // Also ensure any id attributes have prefix replaced
+            // Already handled via replace above
+
+            container.appendChild(newItem);
+            incrementTotalForms();
+
+            // Scroll into view for better UX
+            try {
+                newItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                // no-op
+            }
+
+            // Wire up delete checkbox behavior for the newly added form
+            attachDeleteHandlers(newItem);
+        });
+
+        // Wire up existing delete checkboxes on initial load
+        attachDeleteHandlers();
+    });
+
+
+</script>
+{% endblock %}
