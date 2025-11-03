@@ -17,39 +17,56 @@
             {% csrf_token %}
 
             <!-- Travel Plan base form -->
-            <div class="col-md-6 mb-3">
+            <div class="col mb-3">
                 <div class="card p-3">
+                    <h3>TravelPlan Details</h3>
                     {% include 'partials/django_form.html' with form=plan_form removeSubmit=True %}
                 </div>
             </div>
 
-            <!-- Trip formset management form (render ONCE) -->
             {{ formset.management_form }}
 
-            <!-- Existing Trip forms -->
             <div id="trip-formset" data-prefix="{{ formset.prefix }}">
                 {% for form in formset %}
-                    <div class="col-md-6 mb-3 formset-item">
+                    <div class="col mb-3 formset-item">
                         <div class="card p-3">
+                            <h3>Trip Details</h3>
                             {% include 'partials/django_form.html' with form=form removeSubmit=True %}
                         </div>
+
                     </div>
                 {% endfor %}
             </div>
 
             <!-- Hidden empty form template used by JS to add new forms dynamically -->
             <template id="empty-form-template">
-                <div class="col-md-6 mb-3 formset-item">
+                <div class="col mb-3 formset-item">
                     <div class="card p-3">
+                        <h3>Trip Details</h3>
                         {% include 'partials/django_form.html' with form=formset.empty_form removeSubmit=True %}
                     </div>
                 </div>
             </template>
 
-            <button type="button" id="add-form" class="btn btn-outline-primary col-12 col-md-6 mx-auto mb-3">Add another trip</button>
+            <button type="button" id="add-form" class="btn btn-outline-primary col-12 col-md-6 mb-3">Add another trip</button>
 
-            <button id="submit" class="btn btn-primary col-12 col-md-6 mx-auto" type="submit">Submit</button>
+            <button id="submit" class="btn btn-primary col-12 col-md-6" type="submit">Submit</button>
         </form>
+    </div>
+
+    <!-- Reusable full-screen modal for map selection -->
+    <div id="search_map" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select on map</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0; overflow: hidden;">
+                    <iframe src="{% url 'UI:search_map' %}" height="100%" width="100%"></iframe>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -101,6 +118,16 @@
             totalFormsInput.value = String(current + 1);
         }
 
+        // Hide coordinate fields (lat/lon) since they are auto-filled via map selection
+        function hideCoordFields(scopeEl) {
+            const scope = scopeEl || document;
+            const coordInputs = scope.querySelectorAll("input[name$='_lat'], input[name$='_lon']");
+            coordInputs.forEach(inp => {
+                const group = inp.closest('.mb-3') || inp.parentElement;
+                if (group) group.classList.add('d-none');
+            });
+        }
+
         addBtn.addEventListener('click', function () {
             const index = getCurrentIndex();
             const html = template.innerHTML.replace(/__prefix__/g, index);
@@ -126,12 +153,90 @@
 
             // Wire up delete checkbox behavior for the newly added form
             attachDeleteHandlers(newItem);
+
+            // Attach map buttons for the newly added form
+            attachMapButtons(newItem);
+
+            // Hide the new row's coordinate fields to simplify the UI
+            hideCoordFields(newItem);
         });
 
-        // Wire up existing delete checkboxes on initial load
-        attachDeleteHandlers();
+    // Wire up existing delete checkboxes on initial load
+    attachDeleteHandlers();
+
+    // Wire up map buttons on initial load
+    attachMapButtons(document);
+
+    // Hide coordinate fields on initial load
+    hideCoordFields(document);
     });
 
 
+</script>
+
+<script>
+    // Reusable single modal with an iframe to select an address
+    let currentMapTarget = null; // { nameInput, latInput, lonInput }
+
+    function makeMapButton(inputEl) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-primary btn-sm mt-2';
+        btn.textContent = 'Select on map';
+        btn.addEventListener('click', () => {
+            // Determine corresponding lat/lon inputs by replacing _name suffix
+            const nameAttr = inputEl.getAttribute('name');
+            const latName = nameAttr.replace(/_name$/, '_lat');
+            const lonName = nameAttr.replace(/_name$/, '_lon');
+            const latInput = document.querySelector(`input[name='${latName}']`);
+            const lonInput = document.querySelector(`input[name='${lonName}']`);
+
+            currentMapTarget = {
+                nameInput: inputEl,
+                latInput: latInput,
+                lonInput: lonInput,
+            };
+
+            const modalEl = document.getElementById('search_map');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        });
+        return btn;
+    }
+
+    function attachMapButtons(scopeEl) {
+        const scope = scopeEl || document;
+        const inputs = scope.querySelectorAll("input[name$='-origin_name'], input[name$='-destination_name']");
+        inputs.forEach(input => {
+            if (input.dataset.mapBtnAttached === '1') return;
+            input.dataset.mapBtnAttached = '1';
+
+            // Place the button right after the input
+            const btn = makeMapButton(input);
+            input.insertAdjacentElement('afterend', btn);
+        });
+    }
+
+    // Listen for messages from the iframe and fill the target inputs
+    window.addEventListener('message', (event) => {
+        if (event?.data?.type !== 'addressSelected' || !currentMapTarget) return;
+        const { lat, lon, full_response } = event.data.data || {};
+
+        // Fill fields
+        if (currentMapTarget.nameInput) {
+            const display = full_response?.display_name || `${lat}, ${lon}`;
+            currentMapTarget.nameInput.value = display;
+        }
+        if (currentMapTarget.latInput) currentMapTarget.latInput.value = lat ?? '';
+        if (currentMapTarget.lonInput) currentMapTarget.lonInput.value = lon ?? '';
+
+        // Close modal
+        const modalEl = document.getElementById('search_map');
+        const instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) instance.hide();
+
+        // Reset target
+        currentMapTarget = null;
+    });
 </script>
 {% endblock %}

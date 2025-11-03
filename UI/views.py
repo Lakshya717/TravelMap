@@ -2,6 +2,8 @@ from django.shortcuts import render,redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.http import HttpResponse, JsonResponse
+import requests
 
 
 from django.contrib.auth.views import LoginView, logout_then_login
@@ -103,3 +105,45 @@ def new_travelplan(request):
 @login_required
 def map(request):
     return render(request,'UI/map.html')
+
+def search_map(request):
+    city = {
+        'name': "IIT Kottayam",
+        'center':[9.7553584,76.6482941],
+        'cityBounds':[75.72052001953126,22.851931284116755,76.01852416992189,22.57750708339807]
+    }
+
+    # messages.success(request,'To manually select a location, press Search and then click on Manual Selection')
+    return render(request,"search_map.html",{
+        "city": city
+    })
+
+def geocode(request):
+    if request.method == "GET":
+
+        query = request.GET.get('query','')
+
+        # Refer format at https://nominatim.org/release-docs/latest/api/Search/
+
+        API_headers = {
+            "User-Agent": "CityHub.me/Pre-Release-1.2 (https://cityhub-gyg8d5gcdygdgyg4.centralindia-01.azurewebsites.net/; lakshya_717@outlook.com)"
+        }
+        API_BASE = "https://nominatim.openstreetmap.org/search"
+        API_PARAMS = {
+            "format":"json",
+            "addressdetails":1,
+            "q": query,
+            "limit": 10,
+        }
+
+        try:
+            response = requests.get(API_BASE,params=API_PARAMS,headers=API_headers)
+            response.raise_for_status()
+            return JsonResponse(response.json(), safe=False)
+        
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    else:
+        return None
+    

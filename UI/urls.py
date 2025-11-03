@@ -13,4 +13,6 @@ urlpatterns = [
 	path("travelplans/me/new/",views.new_travelplan,name="new_travelplan"),
 	# path("new/trip/",views.new_trip,name="new_trip "),
 	path("map/",views.map,name="map"),
+	path("search_map/",views.search_map,name="search_map"),
+	path("geocode/", views.geocode, name="geocode"),
 ]

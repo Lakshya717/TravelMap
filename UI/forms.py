@@ -110,6 +110,8 @@ class TripForm(BaseStyling,forms.ModelForm):
 
         self.fields['title'].widget.attrs['col_class'] = "col-12"
         self.fields['notes'].widget.attrs['col_class'] = "col-12"
+        self.fields['origin_name'].widget.attrs['col_class'] = "col-md-6"
+        self.fields['destination_name'].widget.attrs['col_class'] = "col-md-6"
         # Place the datetime fields side by side by default
         if 'departure_time' in self.fields:
             self.fields['departure_time'].widget.attrs['col_class'] = 'col-md-6'

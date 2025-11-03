@@ -80,11 +80,11 @@ class Trip(models.Model):
     origin_name = models.CharField(
         max_length=255,
     )
-    origin_lat = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
+    origin_lat = models.CharField(
+        max_length=50, null=True, blank=True
     )
-    origin_lon = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
+    origin_lon = models.CharField(
+        max_length=50, null=True, blank=True
     )
 
 
@@ -92,11 +92,11 @@ class Trip(models.Model):
     destination_name = models.CharField(
         max_length=255,
     )
-    destination_lat = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
+    destination_lat = models.CharField(
+        max_length=50, null=True, blank=True
     )
-    destination_lon = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True
+    destination_lon = models.CharField(
+        max_length=50, null=True, blank=True
     )
 
     departure_time = models.DateTimeField()

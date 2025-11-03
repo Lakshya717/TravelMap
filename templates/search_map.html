@@ -1,0 +1,311 @@
+{% extends 'partials/layout.html' %}
+{% load static %}
+
+
+{% block explicit_CSS %}
+<!-- leaflet.css -->
+<link rel="stylesheet" 
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+    crossorigin=""/>
+
+<style>
+    html,body {
+        margin: 0;
+        padding: 0;
+    }
+    #map {
+        position: relative;
+    }
+
+    #search-box {
+        position: absolute;
+        z-index: 1000;
+        top: .5rem;
+        left: .5rem;
+        background: rgba(255, 255, 255, 0.559);
+        cursor: default;
+    }
+
+    #forwarding-mapdata {
+        position: absolute;
+        z-index: 1000;
+        bottom: 2rem;
+        right: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="map">
+    <div class="col-md-4 py-2 px-2 rounded" id="search-box">
+        <form id="search-box-form">
+            <div class="row">
+                <div class="col">   
+                    <input class="form-control" type="text" name="query" placeholder="Enter Address ">
+                </div>
+                <div class="col-auto d-flex align-items-center fs-5" id="search-box-form-dropdown">
+                    <!-- Added via JS (custom dropdown) -->
+                </div>
+                <div class="col-auto">
+                    <input class="btn btn-primary" type="submit" value="Search">
+                </div>
+            </div>
+
+            <!-- no city-bound restriction; global search -->
+
+        </form>
+
+        <div id="results" class="list-group my-2 overflow-auto" style="max-height: 300px;">
+            <!-- Being filled dynamically by JS -->
+        </div>
+    </div>
+
+    <div id="forwarding-mapdata">
+        <button class="btn btn-primary" id="forwarding-mapdata-btn">Save and Continue</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block explicit_scripts %}
+<!-- leaflet.js -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+</script>
+
+<!-- Page setup -->
+<script>
+    if (window.self !== window.top) {
+        // Page is in an iframe
+        document.querySelector('nav').className = 'd-none';
+        document.querySelector('.breadcrumb-wrapper').className = 'd-none';
+        document.querySelector('footer').className = 'd-none';
+
+        // Set full height for map
+        document.querySelector('#map').style.height = '100vh';
+    } else {
+        // Page is standalone
+        document.querySelector('footer').className = 'd-none';
+        document.querySelector('#forwarding-mapdata').className = 'd-none';
+
+        // Subtract header height from viewport height
+        document.querySelector('#map').style.height = 
+            `calc(100vh - ${document.querySelector('header').offsetHeight}px)`;
+    }
+</script>
+
+<!-- city (received from django backend via `views.search_map`)-->
+{{ city|json_script:"city-data"}}
+
+<!-- map load  -->
+<script>
+    // viewbox set to the city perimeters
+    const city = JSON.parse(document.querySelector('#city-data').textContent);
+
+    var map = L.map('map', { 
+        center: city.center, 
+        zoom : 15, 
+        zoomControl : false     // Added manually on the bottom-right of the map
+    });
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+        maxZoom: 20,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomleft' }).addTo(map); 
+
+    // A draggable marker with 0 opacity loaded on the map
+    var marker = L.marker(city.center,{
+        opacity : 0,
+        draggable: true
+    }).addTo(map);
+
+    // disable map clicks and map scrolls inside `#search-box` area
+    L.DomEvent.disableClickPropagation(document.querySelector('#search-box'));
+    L.DomEvent.disableScrollPropagation(document.querySelector('#search-box'));
+</script>
+
+<!-- address functionality -->
+<script>
+// A search result element is an instance of this class 
+class searchBox_address {
+    constructor(JSON_object,modified) {
+        this.JSON_response = JSON_object;
+        this.display_name = JSON_object.display_name;
+        this.lat = JSON_object.lat;
+        this.lon = JSON_object.lon;
+
+        this.modified = false;      // This option helps track errors in OSM daatabase (location found via database vs. actual preffered pinpoint location)
+        this.active = false;
+
+        this.addressBox = document.createElement('div');
+        this.addressBox.className = "list-group-item py-2 px-2 list-group-item-action";
+        this.addressBox.setAttribute("tabindex", "0");
+        this.addressBox.innerHTML = this.display_name;
+    }
+
+    DOMelement() {
+        return this.addressBox;
+    }
+
+    select() {
+        this.active = true;
+        this.addressBox.classList.add('active');
+    }
+
+    unselect() {
+        this.active = false;
+        this.addressBox.classList.remove('active');
+    }
+}
+
+// All search results appearing inside a container are controlled via custom dropdown class here
+class custom_dropdown {
+    constructor(container) {
+        this.container = container;
+        this.active = false;
+
+        this.arrow = document.createElement('i');
+        this.arrow.className = 'bi bi-chevron-down';
+        this.arrow.setAttribute('id','searchBoxResultsBox-dropdown');
+
+        this.arrow.addEventListener('click',() => {
+            if (this.active == false) this.show();
+            else this.hide();
+        })
+    }
+
+    show() {
+        this.arrow.classList.remove('bi-chevron-down');
+        this.arrow.classList.add('bi-chevron-up');
+        this.active = true;
+
+        this.container.classList.remove('d-none');
+    }
+
+    hide() {
+        this.arrow.classList.remove('bi-chevron-up');
+        this.arrow.classList.add('bi-chevron-down');
+        this.active = false;
+
+        this.container.classList.add('d-none');
+    }
+
+    DOMelement() {
+        return this.arrow;
+    }
+}
+</script>
+
+<!-- search-box script  -->
+<script>
+    var searchBox = document.querySelector("#search-box");
+    var searchBoxForm = document.querySelector("#search-box-form");
+    var searchBoxResultsBox = document.querySelector("#results"); // <div id="results" class="list-group my-2"></div>
+
+    var searchBoxResultsBoxDropdown = new custom_dropdown(searchBoxResultsBox);
+    document.querySelector('#search-box-form-dropdown').appendChild(searchBoxResultsBoxDropdown.DOMelement());
+
+    // Variable initialization
+    var results = [];   // Stores all the search results received from the API
+    var selectedElement = null;
+    let currentFetchController = null;
+
+    // events After submition of the search-box-form
+    searchBoxForm.onsubmit = (e) => {
+        e.preventDefault();
+
+        // Manual address selector `no_resultObj` is an instance of `searchBox_address`
+        // when clicked, a marker will pop-up at the map center whose cordinates 
+        // are updated annd tracked within this object on marker-drag
+        // (to be used when the required location is not on the OSM database)
+        const no_resultObj = new searchBox_address({
+            display_name : "Manually Select a Location",
+            lat: marker.getLatLng().lat.toFixed(7),        
+            lon: marker.getLatLng().lng.toFixed(7)
+        },true);
+
+        // old results being wiped
+        results = [no_resultObj];               // (and the manual selection is displayed as an option by default)    
+        searchBoxResultsBoxDropdown.show();
+        searchBoxResultsBox.innerHTML = "";
+
+        // Proxy fetch to django (from OSM)
+        fetch(`{% url 'UI:geocode' %}?${ new URLSearchParams({
+            query: searchBoxForm.query.value,
+        })}`)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(JSON_element => results.push(new searchBox_address(JSON_element,false)));
+            
+            results.forEach(element => {
+
+                // When a result element is clicked from the results box
+                element.DOMelement().addEventListener('click', () => {
+                    console.log(element.JSON_response);       // only in debug mode
+
+                    // Standard routine after clicking a searchBox_address element
+                    selectedElement = element;
+                    searchBoxResultsBoxDropdown.hide()
+                    searchBoxForm.query.value = element.display_name;
+
+                    // Marker pointing to the element's co-ordinates
+                    marker.setLatLng([element.lat,element.lon])
+                    marker.setOpacity(1)
+
+
+                    if (element === no_resultObj) {
+                        map.panTo(
+                            [no_resultObj.lat,no_resultObj.lon], {
+                                animate : true,
+                                duration : 0.75,
+                            }
+                        );
+                    } else {
+
+                        // Update co-ordinates in the manual tracker (just in case user changes his mind to manually select)
+                        no_resultObj.lat = element.lat;
+                        no_resultObj.lon = element.lon;
+
+                        map.flyTo(
+                            [element.lat,element.lon], 18, {
+                                animate : true,
+                                duration : 0.75,
+                            }
+                        );
+                    }
+
+                });
+
+                // Appending the `results` into the DOM
+                searchBoxResultsBox.appendChild(element.DOMelement());  
+            });
+        })
+    };
+
+    // Also update the address element's co-ordinates on marker drag
+    marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        selectedElement.lat = pos.lat.toFixed(7);
+        selectedElement.lon = pos.lng.toFixed(7);
+        selectedElement.modified = true; 
+    });
+
+    // communicates with the parent html (sends the data)
+    document.querySelector('#forwarding-mapdata-btn').addEventListener('click',() =>{
+        window.parent.postMessage({
+            type: "addressSelected",
+            data: {
+                lat: selectedElement.lat,
+                lon: selectedElement.lon,
+                full_response: selectedElement.JSON_response,
+                full_response_modified : selectedElement.modified
+            }
+        }, "*");
+    });
+
+
+</script>
+{% endblock %}

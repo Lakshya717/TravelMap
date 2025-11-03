@@ -165,3 +165,7 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',  # Bootstrap uses 'danger' instead of 'error'
 }
+
+# iframe emable options
+# -------------------------------------------------------------------------------------
+X_FRAME_OPTIONS = 'SAMEORIGIN'
