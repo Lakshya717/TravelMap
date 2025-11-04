@@ -6,22 +6,39 @@
 {% endblock %}
 
 {% block content %}
-<section>
+<section id="home">
     <!-- carousel -->    
-    <div id="home" class="carousel slide" data-bs-ride="carousel" id="carousel-1" style="height: 600px;">
+    <style>
+        /* Frosted glass panel behind carousel text */
+        .carousel-blur-panel {
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            color: #111;
+        }
+
+        @media (min-width: 1200px) {
+            .carousel-blur-panel { padding: 1.5rem 1.75rem; }
+        }
+    </style>
+    <div id="carousel-1" class="carousel slide carousel-dark" data-bs-ride="carousel" style="height: 600px;">
         <div class="carousel-inner h-100">
             {% for obj in index_carousel %}
             <div class="carousel-item {% if forloop.first %}active{% endif %} h-100">
                 {% if obj.image %}
-                    <img class="object-fit-cover w-100 d-block position-absolute h-100" src="{{ obj.image.url }}" alt="Slide Image" style="z-index: -1;">
+                    <img class="object-fit-contain w-100 d-block position-absolute h-100" src="{{ obj.image.url }}" alt="Slide Image" style="z-index: -1;">
                 {% else %}
                     <img class="object-fit-cover w-100 d-block position-absolute h-100" src="https://cdn.bootstrapstudio.io/placeholders/1400x800.png" alt="Slide Image" style="z-index: -1;">
                 {% endif %}
-                <div class="container d-flex h-100 flex-column justify-content-center">
+                <div class="container d-flex h-100 flex-column justify-content-center text-dark">
                     <div class="row">
                         <div class="col-md-6 col-xl-4 offset-md-2">
-                            <div style="max-width: 350px;">
-                                <h1 class="text-uppercase fw-bold">{{ obj.title|safe }}</h1>
+                            <div class="carousel-blur-panel">
+                                <h1 class="text-uppercase fw-bold text-dark">{{ obj.title|safe }}</h1>
                                 <p class="my-3">{{ obj.description|safe }}</p><a class="btn btn-primary btn-lg me-2" role="button" href="{{ obj.href|safe }}">Learn More</a>
                             </div>
                         </div>
@@ -31,12 +48,15 @@
             {% endfor %}
         </div>
         <div>
-            <a class="carousel-control-prev" href="#carousel-1" role="button" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon"></span><span class="visually-hidden">Previous</span>
-            </a>
-            <a class="carousel-control-next" href="#carousel-1" role="button" data-bs-slide="next">
-                <span class="carousel-control-next-icon"></span><span class="visually-hidden">Next</span></a>
-            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carousel-1" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carousel-1" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
         <div class="carousel-indicators">
             {% for obj in index_carousel %}
                 <button type="button" data-bs-target="#carousel-1" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}"></button> 

@@ -169,3 +169,10 @@ MESSAGE_TAGS = {
 # iframe emable options
 # -------------------------------------------------------------------------------------
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+
+# Local Media storage
+# -------------------------------------------------------------------------------------
+MEDIA_URL = '/Media/'
+MEDIA_ROOT = BASE_DIR / 'Media'
+

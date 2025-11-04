@@ -5,8 +5,14 @@
 
 {% block explicit_CSS %}
 <style>
-  body.embed nav, body.embed footer { display: none !important; }
-  body.embed #content { padding: 0; }
+  body.embed nav,
+  body.embed footer {
+    display: none !important;
+  }
+
+  body.embed #content {
+    padding: 0;
+  }
 </style>
 {% endblock %}
 
@@ -21,7 +27,7 @@
     </div>
     <div class="col-auto">
       {% if request.user.id == plan.user_id %}
-        <a class="btn btn-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
+      <a class="btn btn-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
       {% endif %}
     </div>
   </div>
@@ -49,15 +55,55 @@
                   <td>{{ trip.origin_name }}</td>
                   <td>{{ trip.departure_time|date:"d/m/Y H:i" }}</td>
                   <td>{{ trip.destination_name }}</td>
-                  <td>{% if trip.estimated_arrival_time %}{{ trip.estimated_arrival_time|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+                  <td>{% if trip.estimated_arrival_time %}{{ trip.estimated_arrival_time|date:"d/m/Y H:i" }}{% else
+                    %}—{% endif %}</td>
                   <td>{{ trip.get_transport_mode_display }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="text-muted">No trips in this plan yet.</td></tr>
+                <tr>
+                  <td colspan="6" class="text-muted">No trips in this plan yet.</td>
+                </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat box -->
+  <div class="row mt-4">
+    <div class="col">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>Plan chat</strong>
+          {% if not request.user.is_authenticated %}
+            <span class="text-muted small">Login to participate</span>
+          {% endif %}
+        </div>
+        <div class="card-body" style="max-height: 320px; overflow-y: auto;" id="chat-messages" data-plan-id="{{ plan.id }}" data-user-id="{% if request.user.is_authenticated %}{{ request.user.id }}{% endif %}">
+          {% for m in chat_messages %}
+            <div class="mb-2 d-flex">
+              <div class="w-75 p-2 border rounded {% if m.user_id == request.user.id %}ms-auto bg-light text-end{% else %}bg-white{% endif %}">
+                <div class="small text-muted">{{ m.user.username }} · {{ m.created_at|date:"d/m/Y H:i" }}</div>
+                <div>{{ m.content|linebreaksbr }}</div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-muted">No messages yet. Be the first to say hi 👋</div>
+          {% endfor %}
+        </div>
+        <div class="card-footer">
+          {% if request.user.is_authenticated %}
+          <form id="chat-form" class="d-flex gap-2" method="post" action="{% url 'UI:chat_messages_api' plan.id %}">
+            {% csrf_token %}
+            <input type="text" name="content" id="chat-input" class="form-control" placeholder="Type your message..." maxlength="2000" autocomplete="off"/>
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+          {% else %}
+          <a class="btn btn-outline-primary" href="{% url 'UI:login' %}">Login to chat</a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -71,5 +117,88 @@
   if (window.self !== window.top) {
     document.body.classList.add('embed');
   }
+
+  // -------- Chat logic (simple fetch-based) --------
+  (function() {
+    const messagesEl = document.getElementById('chat-messages');
+    if (!messagesEl) return;
+    const planId = messagesEl.dataset.planId;
+
+    // CSRF helper from cookie
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    async function fetchMessages() {
+      try {
+        const res = await fetch(`/api/travelplans/${planId}/chat/`, {credentials: 'same-origin'});
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.ok) return;
+        renderMessages(data.messages);
+      } catch (e) { /* noop */ }
+    }
+
+    function renderMessages(msgs) {
+      if (!Array.isArray(msgs)) return;
+      if (msgs.length === 0) {
+        messagesEl.innerHTML = '<div class="text-muted">No messages yet. Be the first to say hi 👋</div>';
+        return;
+      }
+      const currentUserId = messagesEl.dataset.userId ? parseInt(messagesEl.dataset.userId, 10) : null;
+      messagesEl.innerHTML = msgs.map(m => {
+        const isMe = currentUserId && (Number(m.user_id) == currentUserId);
+        const bubbleClasses = isMe ? 'w-75 p-2 border rounded ms-auto bg-light text-end' : 'w-75 p-2 border rounded bg-white';
+        return (
+          `<div class="mb-2 d-flex">
+            <div class="${bubbleClasses}">
+              <div class="small text-muted">${escapeHtml(m.user)} · ${new Date(m.created_at).toLocaleString()}</div>
+              <div>${escapeHtml(m.content)}</div>
+            </div>
+          </div>`
+        );
+      }).join('');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"]/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] || c;
+      });
+    }
+
+    const form = document.getElementById('chat-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chat-input');
+        const content = (input.value || '').trim();
+        if (!content) return;
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': csrftoken,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({content})
+          });
+          if (res.ok) {
+            input.value = '';
+            // refresh list
+            fetchMessages();
+          }
+        } catch (err) { /* noop */ }
+      });
+    }
+
+    // initial fetch + periodic refresh
+    fetchMessages();
+    setInterval(fetchMessages, 5000);
+  })();
 </script>
 {% endblock %}

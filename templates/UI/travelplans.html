@@ -100,16 +100,16 @@ Travelplans
                                         </table>
                                     </div>
                                     <a class="btn btn-primary me-3" href="{% url 'UI:travelplan_detail' plan.id %}">Check Details</a>
-                                        <!-- <a  style="text-decoration: none; color: black;"> -->
-                                    <button class="btn btn-primary me-3" type="button">Invite</button>
-                                    <div class="btn-group">
-                                        <a class="btn btn-outline-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
-                                        <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#">Archive</a>
-                                            <a class="dropdown-item" href="#">Delete</a>
+                                    {% if request.user.is_superuser or request.user.id == plan.user_id %}
+                                        <div class="btn-group">
+                                            <a class="btn btn-outline-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
+                                            <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" href="#">Archive</a>
+                                                <a class="dropdown-item" href="#">Delete</a>
+                                            </div>
                                         </div>
-                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                     </div>

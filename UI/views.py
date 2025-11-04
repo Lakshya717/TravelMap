@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 
 from .forms import *
 from Accounts.models import *
+from django.views.decorators.http import require_http_methods
 
 def index(request):
     return render(request, 'UI/index.html')
@@ -124,9 +125,9 @@ def edit_travelplan(request, pk: int):
         return redirect('UI:travelplans')
 
     # Optional: permission check (owner-only edits)
-    # if plan.user_id != request.user.id:
-    #     messages.error(request, "You don't have permission to edit this plan.")
-    #     return redirect('UI:travelplan_detail', pk=plan.pk)
+    if plan.user_id != request.user.id:
+        messages.error(request, "You don't have permission to edit this plan.")
+        return redirect('UI:travelplan_detail', pk=plan.pk)
 
     if request.method == 'POST':
         plan_form = TravelPlanForm(request.POST, instance=plan)
@@ -148,52 +149,20 @@ def edit_travelplan(request, pk: int):
         'is_edit': True,
     })
 
-
-def map(request):
-    """Render the live social map with all trips.
-
-    Provides a JSON-serializable list of trips in context for the template
-    to render with Leaflet and Leaflet Routing Machine (LRM).
-    """
-    trips = (
-        Trip.objects
-        .select_related('plan', 'plan__user')
-        .all()
+@login_required
+def travelplan_detail(request, pk: int):
+    plan = (
+        TravelPlan.objects
+        .select_related('user')
+        .prefetch_related('trips__passengers', 'chat_messages__user')
+        .get(pk=pk)
     )
-
-    trip_list = []
-    for t in trips:
-        detail_url = None
-        if t.plan_id:
-            try:
-                detail_url = reverse('UI:travelplan_detail', kwargs={'pk': t.plan_id})
-            except Exception:
-                detail_url = None
-
-        trip_list.append({
-            'id': t.id,
-            'title': t.title,
-            'plan_title': t.plan.title if t.plan_id else '',
-            'plan_id': t.plan_id,
-            'detail_url': detail_url,
-            'owner': t.plan.user.username if t.plan_id else '',
-            'origin_name': t.origin_name,
-            'origin_lat': t.origin_lat or '',
-            'origin_lon': t.origin_lon or '',
-            'destination_name': t.destination_name,
-            'destination_lat': t.destination_lat or '',
-            'destination_lon': t.destination_lon or '',
-            'departure_time': t.departure_time.isoformat() if t.departure_time else None,
-            'estimated_arrival_time': t.estimated_arrival_time.isoformat() if t.estimated_arrival_time else None,
-            'transport_mode': t.transport_mode,
-            'route': t.route if hasattr(t, 'route') else None,
-            'status': t.status,
-        })
-
-    return render(request, 'UI/map.html', {
-        'trips': trip_list,
+    messages_qs = plan.chat_messages.all().select_related('user')
+    return render(request, 'UI/travelplan_detail.html', {
+        'plan': plan,
+        'trips': plan.trips.all(),
+        'chat_messages': messages_qs,
     })
-
 
 @login_required
 @require_POST
@@ -244,18 +213,111 @@ def cache_trip_route(request, pk: int):
     trip.save(update_fields=['route', 'updated_at'])
     return JsonResponse({'ok': True})
 
-
 @login_required
-def travelplan_detail(request, pk: int):
-    plan = (
-        TravelPlan.objects
-        .select_related('user')
-        .prefetch_related('trips__passengers')
-        .get(pk=pk)
+@require_http_methods(["GET", "POST"])
+def chat_messages_api(request, pk: int):
+    """Get or post chat messages for a TravelPlan.
+
+    - GET: returns JSON list of messages [{id, user, content, created_at}]
+    - POST: expects form-encoded or JSON {content}; creates message for current user
+    """
+    try:
+        plan = TravelPlan.objects.get(pk=pk)
+    except TravelPlan.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Plan not found'}, status=404)
+
+    if request.method == 'GET':
+        msgs = (
+            plan.chat_messages
+            .select_related('user')
+            .order_by('created_at')
+        )
+        data = [
+            {
+                'id': m.id,
+                'user': m.user.username,
+                'user_id': m.user_id,
+                'content': m.content,
+                'created_at': m.created_at.isoformat(),
+            }
+            for m in msgs
+        ]
+        return JsonResponse({'ok': True, 'messages': data})
+
+    # POST
+    content = None
+    if request.content_type and 'application/json' in request.content_type:
+        try:
+            body = json.loads(request.body.decode('utf-8') or '{}')
+            content = body.get('content')
+        except json.JSONDecodeError:
+            return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+    else:
+        content = request.POST.get('content')
+
+    if not content or not content.strip():
+        return JsonResponse({'ok': False, 'error': 'Message content required'}, status=400)
+
+    msg = ChatMessage.objects.create(
+        plan=plan,
+        user=request.user,
+        content=content.strip()[:2000]
     )
-    return render(request, 'UI/travelplan_detail.html', {
-        'plan': plan,
-        'trips': plan.trips.all(),
+    return JsonResponse({
+        'ok': True,
+        'message': {
+            'id': msg.id,
+            'user': request.user.username,
+            'user_id': request.user.id,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat(),
+        }
+    }, status=201)
+
+
+def map(request):
+    """Render the live social map with all trips.
+
+    Provides a JSON-serializable list of trips in context for the template
+    to render with Leaflet and Leaflet Routing Machine (LRM).
+    """
+    trips = (
+        Trip.objects
+        .select_related('plan', 'plan__user')
+        .all()
+    )
+
+    trip_list = []
+    for t in trips:
+        detail_url = None
+        if t.plan_id:
+            try:
+                detail_url = reverse('UI:travelplan_detail', kwargs={'pk': t.plan_id})
+            except Exception:
+                detail_url = None
+
+        trip_list.append({
+            'id': t.id,
+            'title': t.title,
+            'plan_title': t.plan.title if t.plan_id else '',
+            'plan_id': t.plan_id,
+            'detail_url': detail_url,
+            'owner': t.plan.user.username if t.plan_id else '',
+            'origin_name': t.origin_name,
+            'origin_lat': t.origin_lat or '',
+            'origin_lon': t.origin_lon or '',
+            'destination_name': t.destination_name,
+            'destination_lat': t.destination_lat or '',
+            'destination_lon': t.destination_lon or '',
+            'departure_time': t.departure_time.isoformat() if t.departure_time else None,
+            'estimated_arrival_time': t.estimated_arrival_time.isoformat() if t.estimated_arrival_time else None,
+            'transport_mode': t.transport_mode,
+            'route': t.route if hasattr(t, 'route') else None,
+            'status': t.status,
+        })
+
+    return render(request, 'UI/map.html', {
+        'trips': trip_list,
     })
 
 def search_map(request):

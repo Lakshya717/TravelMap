@@ -4,46 +4,63 @@
 {% block title %}Live Social Map · TravelMap{% endblock %}
 
 {% block explicit_CSS %}
-	<!-- Leaflet core styles -->
-	<link rel="stylesheet" href="{% static 'Leaflet/leaflet.css' %}">
-	<!-- Leaflet Routing Machine styles -->
-	<link rel="stylesheet" href="{% static 'leaflet-routing-machine-3.2.12/dist/leaflet-routing-machine.css' %}">
+<!-- Leaflet core styles -->
+<link rel="stylesheet" href="{% static 'Leaflet/leaflet.css' %}">
+<!-- Leaflet Routing Machine styles -->
+<link rel="stylesheet" href="{% static 'leaflet-routing-machine-3.2.12/dist/leaflet-routing-machine.css' %}">
 
-	<style>
-		html, body { height: 100%; }
+<style>
+	html,
+	body {
+		height: 100%;
+	}
 
-        .breadcrumb-wrapper,footer {
-            display: none !important;
-        }
-		#map {
-			height: 100vh;
-			width: 100%;
-		}
+	.breadcrumb-wrapper,
+	footer {
+		display: none !important;
+	}
 
-		.map-overlay {
-			position: absolute;
-			top: 88px; /* below navbar */
-			right: 16px;
-			z-index: 1000;
-			background: rgba(255,255,255,0.92);
-			border-radius: 8px;
-			box-shadow: 0 2px 10px rgba(0,0,0,.15);
-			padding: 10px 12px;
-			min-width: 260px;
-			max-width: 340px;
-		}
-		.map-overlay h6 { margin: 0 0 6px 0; font-weight: 600; }
-		.legend-gradient {
-			height: 10px;
-			border-radius: 5px;
-			background: linear-gradient(90deg, hsl(200, 90%, 50%), hsl(320, 90%, 50%));
-			margin-bottom: 8px;
-		}
-		.form-text.small { font-size: .8rem; color: #6c757d; }
+	#map {
+		height: 100vh;
+		width: 100%;
+	}
 
-		/* Hide default LRM pane unless explicitly opened */
-		.leaflet-routing-container { display: none; }
-	</style>
+	.map-overlay {
+		position: absolute;
+		top: 88px;
+		/* below navbar */
+		right: 16px;
+		z-index: 1000;
+		background: rgba(255, 255, 255, 0.92);
+		border-radius: 8px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+		padding: 10px 12px;
+		min-width: 260px;
+		max-width: 340px;
+	}
+
+	.map-overlay h6 {
+		margin: 0 0 6px 0;
+		font-weight: 600;
+	}
+
+	.legend-gradient {
+		height: 10px;
+		border-radius: 5px;
+		background: linear-gradient(90deg, hsl(200, 90%, 50%), hsl(320, 90%, 50%));
+		margin-bottom: 8px;
+	}
+
+	.form-text.small {
+		font-size: .8rem;
+		color: #6c757d;
+	}
+
+	/* Hide default LRM pane unless explicitly opened */
+	.leaflet-routing-container {
+		display: none;
+	}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -61,7 +78,7 @@
 				<option value="hours">Group by hours</option>
 				<option value="days">Group by days</option>
 				<option value="weeks">Group by weeks</option>
-				<option value="months" >Group by months</option>
+				<option value="months">Group by months</option>
 			</select>
 		</div>
 		<div class="mb-1" id="bucketWrapper" style="display:none;">
@@ -77,125 +94,125 @@
 {% endblock %}
 
 {% block explicit_scripts %}
-	<!-- Leaflet core -->
-	<script src="{% static 'Leaflet/leaflet.js' %}"></script>
-	<!-- Leaflet Routing Machine -->
-	<script src="{% static 'leaflet-routing-machine-3.2.12/dist/leaflet-routing-machine.min.js' %}"></script>
-	<script>
-		(function() {
-            document.querySelector('#map').style.height = `calc(100vh - ${document.querySelector('nav').offsetHeight}px)`;
+<!-- Leaflet core -->
+<script src="{% static 'Leaflet/leaflet.js' %}"></script>
+<!-- Leaflet Routing Machine -->
+<script src="{% static 'leaflet-routing-machine-3.2.12/dist/leaflet-routing-machine.min.js' %}"></script>
+<script>
+	(function () {
+		document.querySelector('#map').style.height = `calc(100vh - ${document.querySelector('nav').offsetHeight}px)`;
 
-			const trips = JSON.parse(document.getElementById('trips-data').textContent || '[]');
+		const trips = JSON.parse(document.getElementById('trips-data').textContent || '[]');
 
-			// Initialize map
-			const map = L.map('map');
-			const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 19,
-				attribution: '&copy; OpenStreetMap contributors'
-			}).addTo(map);
+		// Initialize map
+		const map = L.map('map');
+		const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '&copy; OpenStreetMap contributors'
+		}).addTo(map);
 
-			const markerGroup = L.featureGroup().addTo(map);
-			const routeObjects = []; // store {trip, layer, baseColor}
+		const markerGroup = L.featureGroup().addTo(map);
+		const routeObjects = []; // store {trip, layer, baseColor}
 
-			function toNum(v) {
-				const n = parseFloat(v);
-				return isNaN(n) ? null : n;
+		function toNum(v) {
+			const n = parseFloat(v);
+			return isNaN(n) ? null : n;
+		}
+		function parseDT(v) {
+			try { return v ? new Date(v) : null; } catch (e) { return null; }
+		}
+
+		// Compute time bounds
+		const times = trips.map(t => parseDT(t.departure_time)).filter(Boolean).map(d => d.getTime());
+		const minT = times.length ? Math.min(...times) : Date.now();
+		const maxT = times.length ? Math.max(...times) : Date.now();
+
+		// Color helpers
+		function hsl(h, s = 90, l = 50) { return `hsl(${h}, ${s}%, ${l}%)`; }
+		function colorContinuous(t) {
+			const tt = parseDT(t.departure_time)?.getTime();
+			if (!tt || maxT === minT) return hsl(200);
+			const p = (tt - minT) / (maxT - minT); // 0..1
+			const hue = 200 + (320 - 200) * p; // blue -> magenta
+			return hsl(hue);
+		}
+		function colorBinned(t, unit, bucketSize) {
+			const dt = parseDT(t.departure_time);
+			if (!dt) return hsl(200);
+			let idx = 0;
+			const start = new Date(minT);
+			const ms = {
+				hours: 3600e3,
+				days: 24 * 3600e3,
+				weeks: 7 * 24 * 3600e3,
+				months: 30 * 24 * 3600e3, // approx
+			}[unit] || 24 * 3600e3;
+			const width = (bucketSize || 1) * ms;
+			idx = Math.floor((dt.getTime() - start.getTime()) / width);
+			const hue = (idx * 47) % 360; // pseudo-distinct cycling
+			return hsl(hue, 80, 50);
+		}
+
+		function arcPoints(a, b, curvature = 0.5, segments = 100) {
+			// Quadratic Bezier between a and b with offset control point
+			const lat1 = a[0], lon1 = a[1], lat2 = b[0], lon2 = b[1];
+			const mid = [(lat1 + lat2) / 2, (lon1 + lon2) / 2];
+			// Perpendicular offset (very rough, enough for visual arc)
+			const dx = lon2 - lon1, dy = lat2 - lat1;
+			const len = Math.sqrt(dx * dx + dy * dy) || 1;
+			const nx = -dy / len, ny = dx / len; // normal vector
+			const cp = [
+				mid[0] + ny * curvature * len,
+				mid[1] + nx * curvature * len
+			];
+			const pts = [];
+			for (let i = 0; i <= segments; i++) {
+				const t = i / segments;
+				const x = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * cp[1] + t * t * lon2;
+				const y = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * cp[0] + t * t * lat2;
+				pts.push([y, x]);
 			}
-			function parseDT(v) {
-				try { return v ? new Date(v) : null; } catch(e) { return null; }
-			}
+			return pts;
+		}
 
-			// Compute time bounds
-			const times = trips.map(t => parseDT(t.departure_time)).filter(Boolean).map(d => d.getTime());
-			const minT = times.length ? Math.min(...times) : Date.now();
-			const maxT = times.length ? Math.max(...times) : Date.now();
+		function attachInteractivity(layerOrGroup, baseColor, summaryHtml) {
+			const bindToPolyline = (pl) => {
+				const highlight = () => { pl.setStyle && pl.setStyle({ color: '#ffcc00', weight: 6, opacity: 0.9 }); };
+				const unhighlight = () => { pl.setStyle && pl.setStyle({ color: baseColor, weight: 4, opacity: 0.8 }); };
+				pl.on && pl.on('mouseover', highlight);
+				pl.on && pl.on('mouseout', unhighlight);
+				if (summaryHtml && pl.bindPopup) pl.bindPopup(summaryHtml, { maxWidth: 320 });
+			};
 
-			// Color helpers
-			function hsl(h, s=90, l=50){ return `hsl(${h}, ${s}%, ${l}%)`; }
-			function colorContinuous(t) {
-				const tt = parseDT(t.departure_time)?.getTime();
-				if (!tt || maxT === minT) return hsl(200);
-				const p = (tt - minT) / (maxT - minT); // 0..1
-				const hue = 200 + (320 - 200) * p; // blue -> magenta
-				return hsl(hue);
-			}
-			function colorBinned(t, unit, bucketSize) {
-				const dt = parseDT(t.departure_time);
-				if (!dt) return hsl(200);
-				let idx = 0;
-				const start = new Date(minT);
-				const ms = {
-					hours: 3600e3,
-					days: 24*3600e3,
-					weeks: 7*24*3600e3,
-					months: 30*24*3600e3, // approx
-				}[unit] || 24*3600e3;
-				const width = (bucketSize||1) * ms;
-				idx = Math.floor((dt.getTime() - start.getTime()) / width);
-				const hue = (idx * 47) % 360; // pseudo-distinct cycling
-				return hsl(hue, 80, 50);
-			}
-
-			function arcPoints(a, b, curvature=0.5, segments=100) {
-				// Quadratic Bezier between a and b with offset control point
-				const lat1=a[0], lon1=a[1], lat2=b[0], lon2=b[1];
-				const mid = [(lat1+lat2)/2, (lon1+lon2)/2];
-				// Perpendicular offset (very rough, enough for visual arc)
-				const dx = lon2 - lon1, dy = lat2 - lat1;
-				const len = Math.sqrt(dx*dx + dy*dy) || 1;
-				const nx = -dy/len, ny = dx/len; // normal vector
-				const cp = [
-					mid[0] + ny * curvature * len,
-					mid[1] + nx * curvature * len
-				];
-				const pts = [];
-				for (let i=0;i<=segments;i++){
-					const t=i/segments;
-					const x = (1-t)*(1-t)*lon1 + 2*(1-t)*t*cp[1] + t*t*lon2;
-					const y = (1-t)*(1-t)*lat1 + 2*(1-t)*t*cp[0] + t*t*lat2;
-					pts.push([y, x]);
+			if (layerOrGroup instanceof L.Polyline) {
+				bindToPolyline(layerOrGroup);
+			} else if (layerOrGroup && typeof layerOrGroup.getLayers === 'function') {
+				try {
+					layerOrGroup.eachLayer((child) => {
+						if (child instanceof L.Polyline) bindToPolyline(child);
+					});
+				} catch (e) {
+					// best-effort: some LRM internals may change
 				}
-				return pts;
 			}
+		}
 
-					function attachInteractivity(layerOrGroup, baseColor, summaryHtml) {
-						const bindToPolyline = (pl) => {
-							const highlight = () => { pl.setStyle && pl.setStyle({ color: '#ffcc00', weight: 6, opacity: 0.9 }); };
-							const unhighlight = () => { pl.setStyle && pl.setStyle({ color: baseColor, weight: 4, opacity: 0.8 }); };
-							pl.on && pl.on('mouseover', highlight);
-							pl.on && pl.on('mouseout', unhighlight);
-							if (summaryHtml && pl.bindPopup) pl.bindPopup(summaryHtml, { maxWidth: 320 });
-						};
+		// Render
+		const tripHasCoords = (t) => toNum(t.origin_lat) !== null && toNum(t.origin_lon) !== null && toNum(t.destination_lat) !== null && toNum(t.destination_lon) !== null;
 
-						if (layerOrGroup instanceof L.Polyline) {
-							bindToPolyline(layerOrGroup);
-						} else if (layerOrGroup && typeof layerOrGroup.getLayers === 'function') {
-							try {
-								layerOrGroup.eachLayer((child) => {
-									if (child instanceof L.Polyline) bindToPolyline(child);
-								});
-							} catch (e) {
-								// best-effort: some LRM internals may change
-							}
-						}
-					}
+		trips.forEach((t) => {
+			if (!tripHasCoords(t)) return;
+			const a = [toNum(t.origin_lat), toNum(t.origin_lon)];
+			const b = [toNum(t.destination_lat), toNum(t.destination_lon)];
 
-			// Render
-			const tripHasCoords = (t) => toNum(t.origin_lat) !== null && toNum(t.origin_lon) !== null && toNum(t.destination_lat) !== null && toNum(t.destination_lon) !== null;
+			// Markers
+			const mA = L.marker(a).addTo(markerGroup).bindPopup(`<strong>Origin</strong><br>${t.origin_name || 'Unknown'}`);
+			const mB = L.marker(b).addTo(markerGroup).bindPopup(`<strong>Destination</strong><br>${t.destination_name || 'Unknown'}`);
 
-					trips.forEach((t) => {
-				if (!tripHasCoords(t)) return;
-				const a = [toNum(t.origin_lat), toNum(t.origin_lon)];
-				const b = [toNum(t.destination_lat), toNum(t.destination_lon)];
-
-				// Markers
-				const mA = L.marker(a).addTo(markerGroup).bindPopup(`<strong>Origin</strong><br>${t.origin_name || 'Unknown'}`);
-				const mB = L.marker(b).addTo(markerGroup).bindPopup(`<strong>Destination</strong><br>${t.destination_name || 'Unknown'}`);
-
-				const departStr = t.departure_time ? new Date(t.departure_time).toLocaleString() : '—';
-				const arriveStr = t.estimated_arrival_time ? new Date(t.estimated_arrival_time).toLocaleString() : '—';
-				const link = t.detail_url || (`/travelplans/${t.plan_id || ''}/`);
-				const summary = `
+			const departStr = t.departure_time ? new Date(t.departure_time).toLocaleString() : '—';
+			const arriveStr = t.estimated_arrival_time ? new Date(t.estimated_arrival_time).toLocaleString() : '—';
+			const link = t.detail_url || (`/travelplans/${t.plan_id || ''}/`);
+			const summary = `
 					<div>
 						<div class="fw-semibold mb-1">${t.title || 'Trip'} · ${t.transport_mode}</div>
 						<div class="small text-muted">By ${t.owner || '—'} in “${t.plan_title || 'Plan'}”</div>
@@ -204,32 +221,32 @@
 						${t.plan_id ? `<div class="mt-2"><a class="btn btn-sm btn-primary" style="color: white;" target="_blank" href="${link}">Open plan</a></div>` : ''}
 					</div>`;
 
-				// Determine initial color
-				let baseColor = colorContinuous(t);
+			// Determine initial color
+			let baseColor = colorContinuous(t);
 
-				if (t.transport_mode === 'FLIGHT' || t.transport_mode === 'TRAIN') {
-					const pts = arcPoints(a, b, 0.35, 64);
-					const poly = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
+			if (t.transport_mode === 'FLIGHT' || t.transport_mode === 'TRAIN') {
+				const pts = arcPoints(a, b, 0.35, 64);
+				const poly = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
+				attachInteractivity(poly, baseColor, summary);
+				routeObjects.push({ trip: t, layer: poly, baseColor });
+			} else {
+				// If we have a cached route, draw it; otherwise, use LRM
+				const drawCached = (route) => {
+					const coords = (route && route.coordinates) ? route.coordinates : null;
+					if (!coords || !coords.length) return false;
+					const latlngs = coords.map(p => L.latLng(p[0], p[1]));
+					const poly = L.polyline(latlngs, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
 					attachInteractivity(poly, baseColor, summary);
 					routeObjects.push({ trip: t, layer: poly, baseColor });
-						} else {
-							// If we have a cached route, draw it; otherwise, use LRM
-							const drawCached = (route) => {
-								const coords = (route && route.coordinates) ? route.coordinates : null;
-								if (!coords || !coords.length) return false;
-								const latlngs = coords.map(p => L.latLng(p[0], p[1]));
-								const poly = L.polyline(latlngs, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
-								attachInteractivity(poly, baseColor, summary);
-								routeObjects.push({ trip: t, layer: poly, baseColor });
-								return true;
-							};
+					return true;
+				};
 
-							if (t.route && drawCached(t.route)) {
-								// Already drawn from cache
-							} else {
-								// Use LRM for road/bus/other
-								const ctrl = L.Routing.control({
-						waypoints: [ L.latLng(a[0], a[1]), L.latLng(b[0], b[1]) ],
+				if (t.route && drawCached(t.route)) {
+					// Already drawn from cache
+				} else {
+					// Use LRM for road/bus/other
+					const ctrl = L.Routing.control({
+						waypoints: [L.latLng(a[0], a[1]), L.latLng(b[0], b[1])],
 						addWaypoints: false,
 						draggableWaypoints: false,
 						fitSelectedRoutes: false,
@@ -242,114 +259,113 @@
 							missingRouteTolerance: 10
 						},
 						createMarker: () => null,
-									routeLine: function(route, options) {
-										const line = L.Routing.line(route, options);
-										// Attach to the actual polylines inside L.Routing.Line (a LayerGroup)
-										attachInteractivity(line, baseColor, summary);
-										// Submit route cache to server (owner only will succeed)
-										try { cacheRoute(t, route); } catch(e) { /* noop */ }
-										return line;
-									}
-								}).addTo(map);
-								// Fallback if routing fails: draw a direct arc
-								ctrl.on('routingerror', () => {
-									const pts = arcPoints(a, b, 0.2, 48);
-									const fallback = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
-									attachInteractivity(fallback, baseColor, summary);
-									// keep reference for recolor
-									routeObjects.push({ trip: t, layer: fallback, baseColor });
-								});
+						routeLine: function (route, options) {
+							const line = L.Routing.line(route, options);
+							// Attach to the actual polylines inside L.Routing.Line (a LayerGroup)
+							attachInteractivity(line, baseColor, summary);
+							// Submit route cache to server (owner only will succeed)
+							try { cacheRoute(t, route); } catch (e) { /* noop */ }
+							return line;
+						}
+					}).addTo(map);
+					// Fallback if routing fails: draw a direct arc
+					ctrl.on('routingerror', () => {
+						const pts = arcPoints(a, b, 0.2, 48);
+						const fallback = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
+						attachInteractivity(fallback, baseColor, summary);
+						// keep reference for recolor
+						routeObjects.push({ trip: t, layer: fallback, baseColor });
+					});
 					routeObjects.push({ trip: t, layer: ctrl, baseColor });
-							}
+				}
+			}
+		});
+
+		// Fit bounds
+		if (markerGroup.getLayers().length) {
+			map.fitBounds(markerGroup.getBounds().pad(0.2));
+		} else {
+			map.setView([20, 0], 2);
+		}
+
+		// Shading controls behavior
+		const granSel = document.getElementById('granularity');
+		const bucketWrap = document.getElementById('bucketWrapper');
+		const bucketSize = document.getElementById('bucketSize');
+		const bucketLabel = document.getElementById('bucketLabel');
+		function updateBucketUI() {
+			const g = granSel.value;
+			const needs = g !== 'continuous';
+			bucketWrap.style.display = needs ? '' : 'none';
+			if (!needs) return;
+			// Adjust max according to unit
+			const maxBy = { hours: 12, days: 14, weeks: 8, months: 12 }[g] || 30;
+			bucketSize.max = String(maxBy);
+			bucketLabel.textContent = bucketSize.value;
+		}
+		updateBucketUI();
+		granSel.addEventListener('change', () => { updateBucketUI(); recolor(); });
+		bucketSize.addEventListener('input', () => { bucketLabel.textContent = bucketSize.value; recolor(); });
+
+		function recolor() {
+			const g = granSel.value;
+			routeObjects.forEach(obj => {
+				let c;
+				if (g === 'continuous') c = colorContinuous(obj.trip);
+				else c = colorBinned(obj.trip, g, parseInt(bucketSize.value, 10) || 1);
+
+				obj.baseColor = c;
+				// Restyle polylines
+				if (obj.layer instanceof L.Polyline) {
+					obj.layer.setStyle({ color: c, weight: 4, opacity: 0.8 });
+				} else if (obj.layer && obj.layer._line) {
+					// _line is an L.LayerGroup; update its child polylines
+					try {
+						obj.layer._line.eachLayer((child) => {
+							if (child instanceof L.Polyline) child.setStyle({ color: c, weight: 4, opacity: 0.8 });
+						});
+					} catch (e) { }
 				}
 			});
 
-			// Fit bounds
-			if (markerGroup.getLayers().length) {
-				map.fitBounds(markerGroup.getBounds().pad(0.2));
-			} else {
-				map.setView([20, 0], 2);
-			}
+			// Update gradient preview
+			const legend = document.getElementById('legendGradient');
+			if (g === 'continuous') legend.style.background = 'linear-gradient(90deg, hsl(200,90%,50%), hsl(320,90%,50%))';
+			else legend.style.background = 'repeating-linear-gradient(90deg, hsl(0,80%,50%) 0, hsl(0,80%,50%) 10px, hsl(47,80%,50%) 10px, hsl(47,80%,50%) 20px, hsl(94,80%,50%) 20px, hsl(94,80%,50%) 30px, hsl(141,80%,50%) 30px, hsl(141,80%,50%) 40px)';
+		}
+		recolor();
 
-			// Shading controls behavior
-			const granSel = document.getElementById('granularity');
-			const bucketWrap = document.getElementById('bucketWrapper');
-			const bucketSize = document.getElementById('bucketSize');
-			const bucketLabel = document.getElementById('bucketLabel');
-			function updateBucketUI() {
-				const g = granSel.value;
-				const needs = g !== 'continuous';
-				bucketWrap.style.display = needs ? '' : 'none';
-				if (!needs) return;
-				// Adjust max according to unit
-				const maxBy = { hours: 12, days: 14, weeks: 8, months: 12 }[g] || 30;
-				bucketSize.max = String(maxBy);
-				bucketLabel.textContent = bucketSize.value;
-			}
-			updateBucketUI();
-			granSel.addEventListener('change', () => { updateBucketUI(); recolor(); });
-			bucketSize.addEventListener('input', () => { bucketLabel.textContent = bucketSize.value; recolor(); });
+		// CSRF helper
+		function getCookie(name) {
+			const value = `; ${document.cookie}`;
+			const parts = value.split(`; ${name}=`);
+			if (parts.length === 2) return parts.pop().split(';').shift();
+		}
 
-							function recolor() {
-				const g = granSel.value;
-				routeObjects.forEach(obj => {
-					let c;
-					if (g === 'continuous') c = colorContinuous(obj.trip);
-					else c = colorBinned(obj.trip, g, parseInt(bucketSize.value, 10)||1);
-
-					obj.baseColor = c;
-							// Restyle polylines
-							if (obj.layer instanceof L.Polyline) {
-						obj.layer.setStyle({ color: c, weight: 4, opacity: 0.8 });
-							} else if (obj.layer && obj.layer._line) {
-								// _line is an L.LayerGroup; update its child polylines
-								try {
-									obj.layer._line.eachLayer((child) => {
-										if (child instanceof L.Polyline) child.setStyle({ color: c, weight: 4, opacity: 0.8 });
-									});
-								} catch(e) {}
-					}
+		// Post route cache
+		async function cacheRoute(trip, route) {
+			if (!route || !route.coordinates || !route.coordinates.length) return;
+			const coords = route.coordinates.map(ll => [ll.lat || ll[0], ll.lng || ll[1]]);
+			const payload = {
+				engine: 'osrmv1',
+				coordinates: coords,
+				summary: route.summary || {}
+			};
+			const csrf = getCookie('csrftoken');
+			try {
+				await fetch(`/api/trips/${trip.id}/route`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRFToken': csrf || ''
+					},
+					body: JSON.stringify(payload),
+					credentials: 'same-origin'
 				});
-
-				// Update gradient preview
-				const legend = document.getElementById('legendGradient');
-				if (g === 'continuous') legend.style.background = 'linear-gradient(90deg, hsl(200,90%,50%), hsl(320,90%,50%))';
-				else legend.style.background = 'repeating-linear-gradient(90deg, hsl(0,80%,50%) 0, hsl(0,80%,50%) 10px, hsl(47,80%,50%) 10px, hsl(47,80%,50%) 20px, hsl(94,80%,50%) 20px, hsl(94,80%,50%) 30px, hsl(141,80%,50%) 30px, hsl(141,80%,50%) 40px)';
+			} catch (e) {
+				// ignore network/cache errors silently
 			}
-			recolor();
-
-					// CSRF helper
-					function getCookie(name) {
-						const value = `; ${document.cookie}`;
-						const parts = value.split(`; ${name}=`);
-						if (parts.length === 2) return parts.pop().split(';').shift();
-					}
-
-					// Post route cache
-					async function cacheRoute(trip, route) {
-						if (!route || !route.coordinates || !route.coordinates.length) return;
-						const coords = route.coordinates.map(ll => [ll.lat || ll[0], ll.lng || ll[1]]);
-						const payload = {
-							engine: 'osrmv1',
-							coordinates: coords,
-							summary: route.summary || {}
-						};
-						const csrf = getCookie('csrftoken');
-						try {
-							await fetch(`/api/trips/${trip.id}/route`, {
-								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json',
-									'X-CSRFToken': csrf || ''
-								},
-								body: JSON.stringify(payload),
-								credentials: 'same-origin'
-							});
-						} catch (e) {
-							// ignore network/cache errors silently
-						}
-					}
-		})();
-	</script>
+		}
+	})();
+</script>
 {% endblock %}
-

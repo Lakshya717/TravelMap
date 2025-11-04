@@ -147,4 +147,28 @@ class Trip(models.Model):
     def __str__(self):
         return f"{self.transport_mode} - ({self.plan}) ({self.origin_lat},{self.origin_lon}) -> ({self.destination_lat},{self.destination_lon})"
 
+#############################################
+# Chat messages per TravelPlan
+#############################################
+
+class ChatMessage(models.Model):
+    plan = models.ForeignKey(
+        TravelPlan,
+        on_delete=models.CASCADE,
+        related_name='chat_messages'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chat_messages'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.user} @ {self.plan}: {self.content[:30]}"
+
 

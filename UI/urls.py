@@ -13,6 +13,7 @@ urlpatterns = [
 	path("travelplans/me/new/",views.new_travelplan,name="new_travelplan"),
 	path("travelplans/<int:pk>/edit/", views.edit_travelplan, name="edit_travelplan"),
 	path("travelplans/<int:pk>/", views.travelplan_detail, name="travelplan_detail"),
+	path("api/travelplans/<int:pk>/chat/", views.chat_messages_api, name="chat_messages_api"),
 
 	path("map/",views.map,name="map"),
 	path("api/trips/<int:pk>/route", views.cache_trip_route, name="cache_trip_route"),

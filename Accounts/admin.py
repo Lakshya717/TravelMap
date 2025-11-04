@@ -4,3 +4,4 @@ from .models import *
 # Register your models here.
 admin.site.register(TravelPlan)
 admin.site.register(Trip)
+admin.site.register(ChatMessage)
