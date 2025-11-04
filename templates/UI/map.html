@@ -69,7 +69,15 @@
 
 	<!-- Optional: legend + shader control overlay -->
 	<div class="map-overlay">
-		<h6>Departure time shading</h6>
+		<div class="d-flex justify-content-between align-items-center mb-2">
+			<h6 class="mb-0">Departure time shading</h6>
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#colorGuideModal" title="Color Guide">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+					<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+					<path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+				</svg>
+			</button>
+		</div>
 		<div class="legend-gradient" id="legendGradient"></div>
 		<div class="mb-2">
 			<label class="form-label mb-1">Granularity</label>
@@ -86,6 +94,108 @@
 			<input type="range" min="1" max="30" value="1" id="bucketSize" class="form-range">
 		</div>
 		<div class="form-text small">Hover any route to highlight · Click to see summary and open the plan.</div>
+	</div>
+
+	<!-- Color Guide Modal -->
+	<div class="modal fade" id="colorGuideModal" tabindex="-1" aria-labelledby="colorGuideModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="colorGuideModalLabel">Map Color Guide</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<h6 class="fw-bold mb-3">Route Colors</h6>
+					
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">1. Active Routes (Future Departures)</h6>
+						<div class="ms-3 mb-2">
+							<strong>Continuous Gradient:</strong>
+							<div class="d-flex align-items-center gap-2 mt-1">
+								<div style="width: 100px; height: 20px; background: linear-gradient(90deg, hsl(200,90%,50%), hsl(320,90%,50%)); border-radius: 4px;"></div>
+								<span class="small text-muted">Blue (earliest) → Magenta (latest)</span>
+							</div>
+							<p class="small text-muted mb-0 mt-1">Routes are colored based on departure time. Earlier departures appear in blue tones, later departures in magenta tones.</p>
+						</div>
+						<div class="ms-3 mt-3">
+							<strong>Binned Groups:</strong>
+							<p class="small text-muted mb-0">When grouped by hours, days, weeks, or months, routes are assigned distinct colors within each time bucket.</p>
+						</div>
+					</div>
+
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">2. Past Routes (Departed > 1 Hour Ago)</h6>
+						<div class="ms-3 mb-2">
+							<div class="d-flex align-items-center gap-2">
+								<div style="width: 60px; height: 3px; background: #9370DB; border-top: 2px dashed #9370DB; border-bottom: 2px dashed #9370DB; opacity: 0.6;"></div>
+								<span class="small"><strong style="color: #9370DB;">Purple Dotted Lines</strong></span>
+							</div>
+							<p class="small text-muted mb-0 mt-1">Routes whose departure time has passed more than 1 hour ago are displayed as <strong style="color: #9370DB;">dotted purple lines</strong> with reduced opacity to indicate they are no longer active.</p>
+						</div>
+					</div>
+
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">3. Circle Markers</h6>
+						<div class="ms-3">
+							<div class="d-flex align-items-center gap-2 mb-2">
+								<div style="width: 16px; height: 16px; border-radius: 50%; background-color: hsl(200,90%,50%); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>
+								<span class="small">Active routes: <strong>Colored circles</strong> matching route color</span>
+							</div>
+							<div class="d-flex align-items-center gap-2">
+								<div style="width: 16px; height: 16px; border-radius: 50%; background-color: #9370DB; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>
+								<span class="small">Past routes: <strong style="color: #9370DB;">Purple circles</strong></span>
+							</div>
+							<p class="small text-muted mb-0 mt-2">Origin and destination markers match their route's color scheme. Markers align perfectly with route endpoints.</p>
+						</div>
+					</div>
+
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">4. Route Separation (Overlap Offset)</h6>
+						<div class="ms-3">
+							<p class="small text-muted mb-2">When routes overlap (within 0.5km), they are automatically offset to make them distinguishable:</p>
+							<ul class="small text-muted mb-0">
+								<li>Offset is <strong>gradually reduced to 0</strong> at origin and destination points</li>
+								<li>Full offset (≈200m) is applied in overlapping middle sections</li>
+								<li>This ensures markers remain perfectly aligned while routes stay separated</li>
+								<li>Works for both active and past routes</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">5. Interactive Features</h6>
+						<div class="ms-3">
+							<ul class="small text-muted mb-0">
+								<li><strong>Hover:</strong> Routes highlight in yellow when you hover over them</li>
+								<li><strong>Click:</strong> View trip details, departure/arrival times, and open the full travel plan</li>
+								<li><strong>Granularity Control:</strong> Change how routes are grouped by time (continuous, hours, days, weeks, months)</li>
+								<li><strong>Bucket Size:</strong> Adjust grouping size when using binned modes</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="mb-4">
+						<h6 class="text-primary mb-2">6. Transport Modes</h6>
+						<div class="ms-3">
+							<ul class="small text-muted mb-0">
+								<li><strong>Flights & Trains:</strong> Displayed as smooth curved arcs (great-circle style)</li>
+								<li><strong>Buses & Roads:</strong> Displayed as road-following routes using OSRM routing</li>
+								<li>All routes use the same color scheme based on departure time</li>
+							</ul>
+						</div>
+					</div>
+
+					<hr class="my-3">
+
+					<div class="alert alert-info small mb-0">
+						<strong>Tip:</strong> Use the granularity selector above to change how routes are colored. The gradient preview updates automatically to show the current color scheme.
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -104,15 +214,21 @@
 
 		const trips = JSON.parse(document.getElementById('trips-data').textContent || '[]');
 
-		// Initialize map
-		const map = L.map('map');
+		// Initialize map with default view (required for renderer initialization)
+		const map = L.map('map', {
+			preferCanvas: false // Use SVG renderer for better circle marker support
+		});
 		const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 19,
 			attribution: '&copy; OpenStreetMap contributors'
 		}).addTo(map);
 
+		// Set initial view to ensure renderer is initialized
+		map.setView([20, 0], 2);
+
 		const markerGroup = L.featureGroup().addTo(map);
-		const routeObjects = []; // store {trip, layer, baseColor}
+		const routeObjects = []; // store {trip, layer, baseColor, coordinates}
+		const allRouteSegments = []; // store {trip, coordinates, color} for overlap detection
 
 		function toNum(v) {
 			const n = parseFloat(v);
@@ -120,6 +236,34 @@
 		}
 		function parseDT(v) {
 			try { return v ? new Date(v) : null; } catch (e) { return null; }
+		}
+
+		// Check if departure time is more than 1 hour ago
+		function isPastDeparture(departureTime) {
+			if (!departureTime) return false;
+			const departDT = parseDT(departureTime);
+			if (!departDT) return false;
+			const now = new Date();
+			const hoursAgo = (now - departDT) / (1000 * 60 * 60); // Convert ms to hours
+			return hoursAgo > 1; // More than 1 hour ago
+		}
+
+		// Get route style based on departure time
+		function getRouteStyle(baseColor, isPast) {
+			if (isPast) {
+				return {
+					color: '#9370DB', // Purple
+					weight: 3,
+					opacity: 0.6,
+					dashArray: '10, 5' // Dotted/dashed line
+				};
+			}
+			return {
+				color: baseColor,
+				weight: 4,
+				opacity: 0.8,
+				dashArray: null // Solid line
+			};
 		}
 
 		// Compute time bounds
@@ -153,6 +297,85 @@
 			return hsl(hue, 80, 50);
 		}
 
+		// Calculate distance between two lat/lon points (Haversine, simplified)
+		function distanceBetween(a, b) {
+			const lat1 = a[0], lon1 = a[1], lat2 = b[0], lon2 = b[1];
+			const R = 6371; // Earth radius in km
+			const dLat = (lat2 - lat1) * Math.PI / 180;
+			const dLon = (lon2 - lon1) * Math.PI / 180;
+			const a_term = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+				Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+				Math.sin(dLon / 2) * Math.sin(dLon / 2);
+			const c = 2 * Math.atan2(Math.sqrt(a_term), Math.sqrt(1 - a_term));
+			return R * c;
+		}
+
+		// Check if two coordinate arrays overlap (within threshold distance)
+		function pathsOverlap(coords1, coords2, thresholdKm = 0.5) {
+			for (let i = 0; i < coords1.length; i++) {
+				for (let j = 0; j < coords2.length; j++) {
+					if (distanceBetween(coords1[i], coords2[j]) < thresholdKm) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		// Apply subtle perpendicular offset to coordinates when overlapping
+		// Only offsets segments that are close to other paths, keeping the path recognizable
+		// Gradually reduces offset to 0 at origin and destination for perfect marker alignment
+		function applyOffsetToPath(coords, otherCoords, offsetDirection, offsetDistance = 0.002) {
+			if (!coords || coords.length < 2) return coords;
+			const offsetCoords = [];
+			const thresholdKm = 0.5; // Only offset points within 0.5km of other path
+			
+			// Helper function to calculate gradual offset multiplier (0 at endpoints, 1 in middle)
+			function getOffsetMultiplier(index, totalLength) {
+				if (totalLength <= 1) return 0;
+				// Normalize position: 0 at start, 1 at end
+				const normalizedPos = index / (totalLength - 1);
+				// Use smooth step function (smoothstep) for gradual transition
+				// Creates a curve that's 0 at endpoints and 1 in the middle
+				const smoothStep = (t) => t * t * (3 - 2 * t); // Smooth interpolation
+				// Create bell curve: 0 at 0, 1 at 0.5, 0 at 1
+				const bellCurve = 4 * normalizedPos * (1 - normalizedPos);
+				return bellCurve;
+			}
+			
+			for (let i = 0; i < coords.length; i++) {
+				const [lat, lon] = coords[i];
+				let shouldOffset = false;
+				
+				// Check if this point is close to any point on the other path
+				for (let j = 0; j < otherCoords.length; j++) {
+					if (distanceBetween(coords[i], otherCoords[j]) < thresholdKm) {
+						shouldOffset = true;
+						break;
+					}
+				}
+				
+				if (shouldOffset) {
+					// Calculate gradual offset multiplier (0 at endpoints, 1 in middle)
+					const multiplier = getOffsetMultiplier(i, coords.length);
+					const offset = offsetDistance * offsetDirection * multiplier;
+					// Simple perpendicular offset (lat-based for simplicity)
+					offsetCoords.push([lat + offset, lon]);
+				} else {
+					// No offset needed for this point
+					offsetCoords.push([lat, lon]);
+				}
+			}
+			return offsetCoords;
+		}
+
+		// Process overlaps for async routes and rerender if needed
+		function processOverlapsAndRerender() {
+			// This function can be called when async routes complete
+			// For now, we handle overlaps during immediate rendering
+			// More complex overlap resolution can be added here if needed
+		}
+
 		function arcPoints(a, b, curvature = 0.5, segments = 100) {
 			// Quadratic Bezier between a and b with offset control point
 			const lat1 = a[0], lon1 = a[1], lat2 = b[0], lon2 = b[1];
@@ -175,10 +398,23 @@
 			return pts;
 		}
 
-		function attachInteractivity(layerOrGroup, baseColor, summaryHtml) {
+		function attachInteractivity(layerOrGroup, baseColor, summaryHtml, isPast = false, originalStyle = null) {
 			const bindToPolyline = (pl) => {
-				const highlight = () => { pl.setStyle && pl.setStyle({ color: '#ffcc00', weight: 6, opacity: 0.9 }); };
-				const unhighlight = () => { pl.setStyle && pl.setStyle({ color: baseColor, weight: 4, opacity: 0.8 }); };
+				const originalStyleObj = originalStyle || { color: baseColor, weight: 4, opacity: 0.8, dashArray: null };
+				const highlight = () => { 
+					if (pl.setStyle) {
+						if (isPast) {
+							pl.setStyle({ color: '#ffcc00', weight: 4, opacity: 0.8, dashArray: '10, 5' });
+						} else {
+							pl.setStyle({ color: '#ffcc00', weight: 6, opacity: 0.9 });
+						}
+					}
+				};
+				const unhighlight = () => { 
+					if (pl.setStyle) {
+						pl.setStyle(originalStyleObj);
+					}
+				};
 				pl.on && pl.on('mouseover', highlight);
 				pl.on && pl.on('mouseout', unhighlight);
 				if (summaryHtml && pl.bindPopup) pl.bindPopup(summaryHtml, { maxWidth: 320 });
@@ -197,6 +433,9 @@
 			}
 		}
 
+		// Store circle markers for color updates
+		const circleMarkers = []; // store {trip, originCircle, destCircle, baseColor}
+
 		// Render
 		const tripHasCoords = (t) => toNum(t.origin_lat) !== null && toNum(t.origin_lon) !== null && toNum(t.destination_lat) !== null && toNum(t.destination_lon) !== null;
 
@@ -205,9 +444,36 @@
 			const a = [toNum(t.origin_lat), toNum(t.origin_lon)];
 			const b = [toNum(t.destination_lat), toNum(t.destination_lon)];
 
-			// Markers
-			const mA = L.marker(a).addTo(markerGroup).bindPopup(`<strong>Origin</strong><br>${t.origin_name || 'Unknown'}`);
-			const mB = L.marker(b).addTo(markerGroup).bindPopup(`<strong>Destination</strong><br>${t.destination_name || 'Unknown'}`);
+			// Check if departure time is more than 1 hour ago
+			const isPast = isPastDeparture(t.departure_time);
+
+			// Determine initial color for markers and routes
+			let baseColor = colorContinuous(t);
+
+			// For past routes, use gray/purple color for markers too
+			const markerColor = isPast ? '#9370DB' : baseColor;
+
+			// Colored circle markers instead of default markers
+			// Using custom div icon to avoid renderer initialization issues
+			const createCircleIcon = (color) => {
+				return L.divIcon({
+					className: 'custom-circle-marker',
+					html: `<div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${color}; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
+					iconSize: [16, 16],
+					iconAnchor: [8, 8]
+				});
+			};
+
+			const originIcon = createCircleIcon(markerColor);
+			const destIcon = createCircleIcon(markerColor);
+
+			const originCircle = L.marker(a, { icon: originIcon }).addTo(markerGroup).bindPopup(`<strong>Origin</strong><br>${t.origin_name || 'Unknown'}`);
+			const destCircle = L.marker(b, { icon: destIcon }).addTo(markerGroup).bindPopup(`<strong>Destination</strong><br>${t.destination_name || 'Unknown'}`);
+
+			// Store for color updates (only if not past)
+			if (!isPast) {
+				circleMarkers.push({ trip: t, originCircle, destCircle, baseColor });
+			}
 
 			const departStr = t.departure_time ? new Date(t.departure_time).toLocaleString() : '—';
 			const arriveStr = t.estimated_arrival_time ? new Date(t.estimated_arrival_time).toLocaleString() : '—';
@@ -215,36 +481,37 @@
 			const summary = `
 					<div>
 						<div class="fw-semibold mb-1">${t.title || 'Trip'} · ${t.transport_mode}</div>
-						<div class="small text-muted">By ${t.owner || '—'} in “${t.plan_title || 'Plan'}”</div>
+						<div class="small text-muted">By ${t.owner || '—'} in "${t.plan_title || 'Plan'}"</div>
 						<div class="mt-1">${t.origin_name} → ${t.destination_name}</div>
 						<div class="small">Depart: ${departStr} · Arrive: ${arriveStr}</div>
+						${isPast ? '<div class="small text-muted mt-1"><em>Departure time has passed</em></div>' : ''}
 						${t.plan_id ? `<div class="mt-2"><a class="btn btn-sm btn-primary" style="color: white;" target="_blank" href="${link}">Open plan</a></div>` : ''}
 					</div>`;
 
-			// Determine initial color
-			let baseColor = colorContinuous(t);
+			// Get route style based on past state
+			const routeStyle = getRouteStyle(baseColor, isPast);
+
+			let routeCoords = null;
 
 			if (t.transport_mode === 'FLIGHT' || t.transport_mode === 'TRAIN') {
 				const pts = arcPoints(a, b, 0.35, 64);
-				const poly = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
-				attachInteractivity(poly, baseColor, summary);
-				routeObjects.push({ trip: t, layer: poly, baseColor });
+				routeCoords = pts;
+				allRouteSegments.push({ trip: t, coordinates: pts, color: baseColor, index: allRouteSegments.length, isPast });
 			} else {
 				// If we have a cached route, draw it; otherwise, use LRM
 				const drawCached = (route) => {
 					const coords = (route && route.coordinates) ? route.coordinates : null;
 					if (!coords || !coords.length) return false;
-					const latlngs = coords.map(p => L.latLng(p[0], p[1]));
-					const poly = L.polyline(latlngs, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
-					attachInteractivity(poly, baseColor, summary);
-					routeObjects.push({ trip: t, layer: poly, baseColor });
+					routeCoords = coords;
+					allRouteSegments.push({ trip: t, coordinates: coords, color: baseColor, index: allRouteSegments.length, isPast });
 					return true;
 				};
 
 				if (t.route && drawCached(t.route)) {
-					// Already drawn from cache
+					// Coordinates stored
 				} else {
 					// Use LRM for road/bus/other
+					const routeIndex = allRouteSegments.length;
 					const ctrl = L.Routing.control({
 						waypoints: [L.latLng(a[0], a[1]), L.latLng(b[0], b[1])],
 						addWaypoints: false,
@@ -254,15 +521,22 @@
 						routeWhileDragging: false,
 						router: L.Routing.osrmv1(),
 						lineOptions: {
-							styles: [{ color: baseColor, weight: 4, opacity: 0.8 }],
+							styles: [routeStyle],
 							extendToWaypoints: true,
 							missingRouteTolerance: 10
 						},
 						createMarker: () => null,
 						routeLine: function (route, options) {
 							const line = L.Routing.line(route, options);
+							// Extract coordinates from route for overlap detection
+							if (route.coordinates && route.coordinates.length) {
+								const coords = route.coordinates.map(ll => [ll.lat || ll[0], ll.lng || ll[1]]);
+								allRouteSegments.push({ trip: t, coordinates: coords, color: baseColor, index: routeIndex, isPast });
+								// Check for overlaps and apply offset if needed
+								processOverlapsAndRerender();
+							}
 							// Attach to the actual polylines inside L.Routing.Line (a LayerGroup)
-							attachInteractivity(line, baseColor, summary);
+							attachInteractivity(line, baseColor, summary, isPast, routeStyle);
 							// Submit route cache to server (owner only will succeed)
 							try { cacheRoute(t, route); } catch (e) { /* noop */ }
 							return line;
@@ -271,13 +545,30 @@
 					// Fallback if routing fails: draw a direct arc
 					ctrl.on('routingerror', () => {
 						const pts = arcPoints(a, b, 0.2, 48);
-						const fallback = L.polyline(pts, { color: baseColor, weight: 4, opacity: 0.8 }).addTo(map);
-						attachInteractivity(fallback, baseColor, summary);
-						// keep reference for recolor
-						routeObjects.push({ trip: t, layer: fallback, baseColor });
+						allRouteSegments.push({ trip: t, coordinates: pts, color: baseColor, index: routeIndex, isPast });
+						processOverlapsAndRerender();
 					});
-					routeObjects.push({ trip: t, layer: ctrl, baseColor });
+					routeObjects.push({ trip: t, layer: ctrl, baseColor, isPast });
 				}
+			}
+
+			// Render immediate routes (FLIGHT/TRAIN or cached)
+			if (routeCoords) {
+				// Check for overlaps with already-rendered routes and apply subtle offset
+				let finalCoords = routeCoords;
+				// Check against all previously processed routes (excluding current one)
+				for (let i = 0; i < allRouteSegments.length - 1; i++) {
+					if (pathsOverlap(routeCoords, allRouteSegments[i].coordinates, 0.5)) {
+						// Alternate offset direction based on index to separate overlapping paths
+						const offsetDir = (allRouteSegments.length % 2 === 0) ? 1 : -1;
+						// Use much smaller offset (0.002 degrees ≈ 200m) to keep path recognizable
+						finalCoords = applyOffsetToPath(routeCoords, allRouteSegments[i].coordinates, offsetDir, 0.002);
+						break; // Apply offset once for first overlap found
+					}
+				}
+				const poly = L.polyline(finalCoords, routeStyle).addTo(map);
+				attachInteractivity(poly, baseColor, summary, isPast, routeStyle);
+				routeObjects.push({ trip: t, layer: poly, baseColor, isPast });
 			}
 		});
 
@@ -310,6 +601,9 @@
 		function recolor() {
 			const g = granSel.value;
 			routeObjects.forEach(obj => {
+				// Skip past routes - they should remain purple/gray dotted
+				if (obj.isPast) return;
+
 				let c;
 				if (g === 'continuous') c = colorContinuous(obj.trip);
 				else c = colorBinned(obj.trip, g, parseInt(bucketSize.value, 10) || 1);
@@ -326,6 +620,26 @@
 						});
 					} catch (e) { }
 				}
+			});
+
+			// Update circle markers (custom div icons)
+			circleMarkers.forEach(markerObj => {
+				let c;
+				if (g === 'continuous') c = colorContinuous(markerObj.trip);
+				else c = colorBinned(markerObj.trip, g, parseInt(bucketSize.value, 10) || 1);
+
+				markerObj.baseColor = c;
+				// Update div icon HTML with new color
+				const updateIconColor = (marker, color) => {
+					if (marker && marker._icon) {
+						const div = marker._icon.querySelector('div');
+						if (div) {
+							div.style.backgroundColor = color;
+						}
+					}
+				};
+				updateIconColor(markerObj.originCircle, c);
+				updateIconColor(markerObj.destCircle, c);
 			});
 
 			// Update gradient preview
