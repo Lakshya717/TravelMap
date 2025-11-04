@@ -93,7 +93,7 @@ class TripForm(BaseStyling,forms.ModelForm):
     class Meta:
         model = Trip
         fields = '__all__'
-        exclude = ['plan','created_at','updated_at','passengers']
+        exclude = ['plan','created_at','updated_at','passengers','route']
         widgets = {
             'departure_time': forms.DateTimeInput(
                 attrs={'type': 'datetime-local'},

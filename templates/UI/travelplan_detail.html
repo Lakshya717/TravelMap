@@ -1,0 +1,75 @@
+{% extends 'partials/layout.html' %}
+{% load static %}
+
+{% block title %}{{ plan.title }} - TravelMap{% endblock %}
+
+{% block explicit_CSS %}
+<style>
+  body.embed nav, body.embed footer { display: none !important; }
+  body.embed #content { padding: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content" class="container py-3">
+  <div class="row mb-3 align-items-center">
+    <div class="col">
+      <h3 class="mb-1">{{ plan.title }}</h3>
+      <div class="text-muted">
+        by {{ plan.user.username }} · {{ plan.get_status_display }} · created {{ plan.created_at|date:"d M Y" }}
+      </div>
+    </div>
+    <div class="col-auto">
+      {% if request.user.id == plan.user_id %}
+        <a class="btn btn-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>From</th>
+                  <th>Departure</th>
+                  <th>To</th>
+                  <th>Arrival (est.)</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for trip in trips %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ trip.origin_name }}</td>
+                  <td>{{ trip.departure_time|date:"d/m/Y H:i" }}</td>
+                  <td>{{ trip.destination_name }}</td>
+                  <td>{% if trip.estimated_arrival_time %}{{ trip.estimated_arrival_time|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+                  <td>{{ trip.get_transport_mode_display }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-muted">No trips in this plan yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block explicit_scripts %}
+<script>
+  // If embedded in an iframe (map popup), hide navbar/footer for a clean view
+  if (window.self !== window.top) {
+    document.body.classList.add('embed');
+  }
+</script>
+{% endblock %}

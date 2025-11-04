@@ -3,6 +3,9 @@ from django.urls import reverse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+import json
 import requests
 
 
@@ -103,8 +106,157 @@ def new_travelplan(request):
     })
 
 @login_required
+def edit_travelplan(request, pk: int):
+    """Edit an existing TravelPlan and its nested Trips using the same forms/formset as creation.
+
+    - Reuses TravelPlanForm and TripFormSet
+    - Supports adding new trips and deleting existing ones (via formset can_delete)
+    """
+    try:
+        plan = (
+            TravelPlan.objects
+            .select_related('user')
+            .prefetch_related('trips')
+            .get(pk=pk)
+        )
+    except TravelPlan.DoesNotExist:
+        messages.error(request, "Travel plan not found.")
+        return redirect('UI:travelplans')
+
+    # Optional: permission check (owner-only edits)
+    # if plan.user_id != request.user.id:
+    #     messages.error(request, "You don't have permission to edit this plan.")
+    #     return redirect('UI:travelplan_detail', pk=plan.pk)
+
+    if request.method == 'POST':
+        plan_form = TravelPlanForm(request.POST, instance=plan)
+        formset = TripFormSet(request.POST, instance=plan)
+        if plan_form.is_valid() and formset.is_valid():
+            plan_form.save()
+            formset.save()
+            messages.success(request, "Travel plan updated.")
+            return redirect('UI:travelplan_detail', pk=plan.pk)
+    else:
+        plan_form = TravelPlanForm(instance=plan)
+        formset = TripFormSet(instance=plan)
+
+    # Reuse the same template as creation
+    return render(request, 'UI/travelplans_new.html', {
+        'plan_form': plan_form,
+        'formset': formset,
+        'plan': plan,
+        'is_edit': True,
+    })
+
+
 def map(request):
-    return render(request,'UI/map.html')
+    """Render the live social map with all trips.
+
+    Provides a JSON-serializable list of trips in context for the template
+    to render with Leaflet and Leaflet Routing Machine (LRM).
+    """
+    trips = (
+        Trip.objects
+        .select_related('plan', 'plan__user')
+        .all()
+    )
+
+    trip_list = []
+    for t in trips:
+        detail_url = None
+        if t.plan_id:
+            try:
+                detail_url = reverse('UI:travelplan_detail', kwargs={'pk': t.plan_id})
+            except Exception:
+                detail_url = None
+
+        trip_list.append({
+            'id': t.id,
+            'title': t.title,
+            'plan_title': t.plan.title if t.plan_id else '',
+            'plan_id': t.plan_id,
+            'detail_url': detail_url,
+            'owner': t.plan.user.username if t.plan_id else '',
+            'origin_name': t.origin_name,
+            'origin_lat': t.origin_lat or '',
+            'origin_lon': t.origin_lon or '',
+            'destination_name': t.destination_name,
+            'destination_lat': t.destination_lat or '',
+            'destination_lon': t.destination_lon or '',
+            'departure_time': t.departure_time.isoformat() if t.departure_time else None,
+            'estimated_arrival_time': t.estimated_arrival_time.isoformat() if t.estimated_arrival_time else None,
+            'transport_mode': t.transport_mode,
+            'route': t.route if hasattr(t, 'route') else None,
+            'status': t.status,
+        })
+
+    return render(request, 'UI/map.html', {
+        'trips': trip_list,
+    })
+
+
+@login_required
+@require_POST
+def cache_trip_route(request, pk: int):
+    """Persist a computed route for a trip to avoid re-querying the routing engine.
+
+    Expected JSON body: {
+      "engine": "osrmv1",
+      "coordinates": [[lat, lon], ...],
+      "summary": {"totalDistance": Number, "totalTime": Number}
+    }
+    Only the plan owner (or staff) is allowed to cache routes for their trips.
+    """
+    try:
+        trip = Trip.objects.select_related('plan', 'plan__user').get(pk=pk)
+    except Trip.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Trip not found'}, status=404)
+
+    if not (request.user.is_staff or (trip.plan_id and trip.plan.user_id == request.user.id)):
+        return JsonResponse({'ok': False, 'error': 'Forbidden'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON'}, status=400)
+
+    coords = payload.get('coordinates')
+    if not isinstance(coords, list) or not coords:
+        return JsonResponse({'ok': False, 'error': 'Missing coordinates'}, status=400)
+
+    # Basic normalization: ensure [lat, lon] pairs of floats
+    norm = []
+    for pair in coords:
+        try:
+            lat, lon = float(pair[0]), float(pair[1])
+            norm.append([lat, lon])
+        except Exception:
+            continue
+    if not norm:
+        return JsonResponse({'ok': False, 'error': 'No valid coordinates'}, status=400)
+
+    trip.route = {
+        'engine': payload.get('engine') or 'osrmv1',
+        'coordinates': norm,
+        'summary': payload.get('summary') or {},
+        'saved_at': timezone.now().isoformat()
+    }
+    trip.save(update_fields=['route', 'updated_at'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def travelplan_detail(request, pk: int):
+    plan = (
+        TravelPlan.objects
+        .select_related('user')
+        .prefetch_related('trips__passengers')
+        .get(pk=pk)
+    )
+    return render(request, 'UI/travelplan_detail.html', {
+        'plan': plan,
+        'trips': plan.trips.all(),
+    })
 
 def search_map(request):
     city = {
@@ -146,4 +298,4 @@ def geocode(request):
 
     else:
         return None
-    
+  

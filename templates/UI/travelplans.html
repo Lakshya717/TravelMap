@@ -7,7 +7,17 @@ Travelplans
 {% endblock %}
 
 {% block explicit_CSS %}
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth transition for scale and shadow */
+    }
 
+    .card:hover {
+        transform: scale(1.001);
+        box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+</style>
 
 
 {% endblock %}
@@ -32,73 +42,76 @@ Travelplans
             {% for plan in plans %}
                 <div class="row mb-3">
                     <div class="col">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 class="card-title">{{ plan.title }}</h4>
-                                <h6 class="text-muted card-subtitle mb-2">
-                                    {% for p in plan.all_passengers %}
-                                        {% if forloop.last %}
-                                            {{ p.username }}
-                                        {% else %}
-                                            {{ p.username }} ,
-                                        {% endif %}
-                                    {% endfor %}
-                                </h6>
-                                <p>
-                                    {% with ft=plan.first_trip lt=plan.last_trip %}
-                                        {% if ft %}
-                                            <strong>Date:</strong> {{ ft.departure_time|date:"d/m/y" }}<br>
-                                            <strong>Origin:</strong> {{ ft.origin_name }}<br>
-                                        {% endif %}
-                                        {% if lt %}
-                                            <strong>Destination:</strong> {{ lt.destination_name }}
-                                        {% endif %}
-                                    {% endwith %}
-                                </p>
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>trip #</th>
-                                                <th>From</th>
-                                                <th>Date-time</th>
-                                                <th>To</th>
-                                                <th>Date-time</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for trip in plan.trips.all %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title">{{ plan.title }}</h4>
+                                    <h6 class="text-muted card-subtitle mb-2">
+                                        {% for p in plan.all_passengers %}
+                                            {% if forloop.last %}
+                                                {{ p.username }}
+                                            {% else %}
+                                                {{ p.username }} ,
+                                            {% endif %}
+                                        {% endfor %}
+                                    </h6>
+                                    <p>
+                                        {% with ft=plan.first_trip lt=plan.last_trip %}
+                                            {% if ft %}
+                                                <strong>Date:</strong> {{ ft.departure_time|date:"d/m/y" }}<br>
+                                                <strong>Origin:</strong> {{ ft.origin_name }}<br>
+                                            {% endif %}
+                                            {% if lt %}
+                                                <strong>Destination:</strong> {{ lt.destination_name }}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </p>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
                                                 <tr>
-                                                    <td>{{ forloop.counter }}</td>
-                                                    <td>{% if forloop.first %}<strong>{{ trip.origin_name }}</strong>{% else %}{{ trip.origin_name }}{% endif %}</td>
-                                                    <td>{{ trip.departure_time|date:"d/m/y - g:i A" }}</td>
-                                                    <td>{% if forloop.last %}<strong>{{ trip.destination_name }}</strong>{% else %}{{ trip.destination_name }}{% endif %}</td>
-                                                    <td>
-                                                        {% if trip.estimated_arrival_time %}
-                                                            {{ trip.estimated_arrival_time|date:"d/m/y - g:i A" }}
-                                                        {% else %}
-                                                            —
-                                                        {% endif %}
-                                                    </td>
+                                                    <th>trip #</th>
+                                                    <th>From</th>
+                                                    <th>Date-time</th>
+                                                    <th>To</th>
+                                                    <th>Date-time</th>
+                                                    <th>Mode</th>
                                                 </tr>
-                                            {% empty %}
-                                                <tr><td colspan="5" class="text-muted">No trips added yet.</td></tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <button class="btn btn-primary me-3" type="button">Check on Map</button>
-                                <button class="btn btn-primary me-3" type="button">Invite</button>
-                                <div class="btn-group">
-                                    <button class="btn btn-outline-primary" type="button">Edit</button>
-                                    <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item" href="#">Archive</a>
-                                        <a class="dropdown-item" href="#">Delete</a>
+                                            </thead>
+                                            <tbody>
+                                                {% for trip in plan.trips.all %}
+                                                    <tr>
+                                                        <td>{{ forloop.counter }}</td>
+                                                        <td>{% if forloop.first %}<strong>{{ trip.origin_name }}</strong>{% else %}{{ trip.origin_name }}{% endif %}</td>
+                                                        <td>{{ trip.departure_time|date:"d/m/y - g:i A" }}</td>
+                                                        <td>{% if forloop.last %}<strong>{{ trip.destination_name }}</strong>{% else %}{{ trip.destination_name }}{% endif %}</td>
+                                                        <td>
+                                                            {% if trip.estimated_arrival_time %}
+                                                                {{ trip.estimated_arrival_time|date:"d/m/y - g:i A" }}
+                                                            {% else %}
+                                                                —
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ trip.transport_mode }}</td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr><td colspan="5" class="text-muted">No trips added yet.</td></tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <a class="btn btn-primary me-3" href="{% url 'UI:travelplan_detail' plan.id %}">Check Details</a>
+                                        <!-- <a  style="text-decoration: none; color: black;"> -->
+                                    <button class="btn btn-primary me-3" type="button">Invite</button>
+                                    <div class="btn-group">
+                                        <a class="btn btn-outline-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
+                                        <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="#">Archive</a>
+                                            <a class="dropdown-item" href="#">Delete</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                     </div>
                 </div>
             {% endfor %}

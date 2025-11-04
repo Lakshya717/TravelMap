@@ -121,6 +121,17 @@ class Trip(models.Model):
         blank=True,
     )
 
+    # Cached routing result (OSRM/LRM):
+    # Store coordinates and summary to avoid re-querying routing engine.
+    # Example structure:
+    # {
+    #   "engine": "osrmv1",
+    #   "coordinates": [[lat, lon], ...],
+    #   "summary": {"totalDistance": 12345, "totalTime": 6789},
+    #   "saved_at": "2025-11-04T12:34:56Z"
+    # }
+    route = models.JSONField(null=True, blank=True)
+
     status = models.CharField(
         max_length=10,
         choices=PlanStatus.choices,
@@ -132,5 +143,8 @@ class Trip(models.Model):
     
     class Meta:
         ordering = ['departure_time']
+
+    def __str__(self):
+        return f"{self.transport_mode} - ({self.plan}) ({self.origin_lat},{self.origin_lon}) -> ({self.destination_lat},{self.destination_lon})"
 
 

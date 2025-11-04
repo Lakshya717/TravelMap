@@ -11,8 +11,11 @@ urlpatterns = [
 	path("travelplans/",views.travelplans,name="travelplans"),
 	path("travelplans/me/",views.my_travelplans,name="my_travelplans"),
 	path("travelplans/me/new/",views.new_travelplan,name="new_travelplan"),
-	# path("new/trip/",views.new_trip,name="new_trip "),
+	path("travelplans/<int:pk>/edit/", views.edit_travelplan, name="edit_travelplan"),
+	path("travelplans/<int:pk>/", views.travelplan_detail, name="travelplan_detail"),
+
 	path("map/",views.map,name="map"),
+	path("api/trips/<int:pk>/route", views.cache_trip_route, name="cache_trip_route"),
 	path("search_map/",views.search_map,name="search_map"),
 	path("geocode/", views.geocode, name="geocode"),
 ]
