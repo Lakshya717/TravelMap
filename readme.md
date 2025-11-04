@@ -123,7 +123,7 @@ TravelMap/
 ├─ TravelMap/                # Django project (settings, urls, wsgi/asgi)
 ├─ Accounts/                 # TravelPlan, Trip, ChatMessage models
 ├─ UI/                       # Forms, views, urls, context processors, CMS models
-├─ templates/                # Jinja/Django templates (UI/, partials/)
+├─ templates/                # Django templates (UI/, partials/)
 ├─ static/                   # Bootstrap, Leaflet, LRM assets
 ├─ Media/                    # Uploaded images (carousel/features)
 ├─ requirements.txt
