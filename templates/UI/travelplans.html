@@ -13,7 +13,6 @@ Travelplans
     }
 
     .card:hover {
-        transform: scale(1.001);
         box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
         cursor: pointer;
     }
@@ -104,9 +103,13 @@ Travelplans
                                         <div class="btn-group">
                                             <a class="btn btn-outline-primary" href="{% url 'UI:edit_travelplan' plan.id %}">Edit</a>
                                             <button class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" type="button"></button>
-                                            <div class="dropdown-menu">
-                                                <a class="dropdown-item" href="#">Archive</a>
-                                                <a class="dropdown-item" href="#">Delete</a>
+                                            <div class="dropdown-menu" style="z-index: 100;">
+                                                {# TODO: Implement archive; enable when backend is ready #}
+                                                {# <a class="dropdown-item" href="#">Archive</a> #}
+                                                <form method="post" action="{% url 'UI:delete_travelplan' plan.id %}" onsubmit="return confirm('Delete this travel plan? This cannot be undone.');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                                </form>
                                             </div>
                                         </div>
                                     {% endif %}

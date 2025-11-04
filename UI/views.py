@@ -165,6 +165,33 @@ def travelplan_detail(request, pk: int):
     })
 
 @login_required
+@require_http_methods(["POST"])
+def delete_travelplan(request, pk: int):
+    """Delete a TravelPlan (owner or staff only).
+
+    This endpoint expects a POST request and will redirect back to the
+    user's travel plan list with a status message.
+    """
+    try:
+        plan = (
+            TravelPlan.objects
+            .select_related('user')
+            .get(pk=pk)
+        )
+    except TravelPlan.DoesNotExist:
+        messages.error(request, "Travel plan not found.")
+        return redirect('UI:travelplans')
+
+    if not (request.user.is_staff or plan.user_id == request.user.id):
+        messages.error(request, "You don't have permission to delete this plan.")
+        return redirect('UI:travelplan_detail', pk=plan.pk)
+
+    title = plan.title
+    plan.delete()
+    messages.success(request, f"Deleted travel plan: {title}")
+    return redirect('UI:my_travelplans')
+
+@login_required
 @require_POST
 def cache_trip_route(request, pk: int):
     """Persist a computed route for a trip to avoid re-querying the routing engine.
