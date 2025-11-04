@@ -20,7 +20,7 @@ These commands are for Windows PowerShell. Bash/macOS equivalents are noted wher
 1) Clone the repository
 
 ```
-git clone https://github.com/your-org-or-user/TravelMap.git
+git clone https://github.com/Lakshya717/TravelMap.git
 cd TravelMap
 ```
 
